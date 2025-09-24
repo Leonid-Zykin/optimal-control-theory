@@ -1,4 +1,4 @@
-This is XeTeX, Version 3.141592653-2.6-0.999995 (TeX Live 2023/Debian) (preloaded format=xelatex 2025.7.13)  24 SEP 2025 15:57
+This is XeTeX, Version 3.141592653-2.6-0.999995 (TeX Live 2023/Debian) (preloaded format=xelatex 2025.7.13)  24 SEP 2025 16:02
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -1620,17 +1620,18 @@ Missing character: There is no о (U+043E) in font [lmmono12-regular]:!
 Missing character: There is no р (U+0440) in font [lmmono12-regular]:!
 Missing character: There is no и (U+0438) in font [lmmono12-regular]:!
 Missing character: There is no ю (U+044E) in font [lmmono12-regular]:!
-[6])
+[6]
+File: images/task1/gd_traj_012.png Graphic file (type bmp)
+<images/task1/gd_traj_012.png>
+File: images/task1/gd_J_012.png Graphic file (type bmp)
+<images/task1/gd_J_012.png>
+File: images/task1/gd_traj_005.png Graphic file (type bmp)
+<images/task1/gd_traj_005.png>
+File: images/task1/gd_J_005.png Graphic file (type bmp)
+<images/task1/gd_J_005.png>
+)
 
 LaTeX Warning: Empty bibliography on input line 204.
-
-
-Package caption Warning: Unused \captionsetup[figure] on input line 84.
-See the caption package documentation for explanation.
-
-
-Package caption Warning: Unused \captionsetup[subfigure] on input line 85.
-See the caption package documentation for explanation.
 
 
 Package caption Warning: Unused \captionsetup[table] on input line 86.
@@ -1645,24 +1646,18 @@ L3 programming layer <2020/03/25>
 
 LaTeX Warning: Label(s) may have changed. Rerun to get cross-references right.
 
-
-Package rerunfilecheck Warning: File `OCT_lab1_report.out' has changed.
-(rerunfilecheck)                Rerun to get outlines right
-(rerunfilecheck)                or use package `bookmark'.
-
-Package rerunfilecheck Info: Checksums for `OCT_lab1_report.out':
-(rerunfilecheck)             Before: 04387DCC32F89D918DF1CAF18E9985DA;2025
-(rerunfilecheck)             After:  4B15584C9BD3ADA45E21D5632794BF3D;3259.
+Package rerunfilecheck Info: File `OCT_lab1_report.out' has not changed.
+(rerunfilecheck)             Checksum: 4B15584C9BD3ADA45E21D5632794BF3D;3259.
 Package logreq Info: Writing requests to 'OCT_lab1_report.run.xml'.
 \openout1 = `OCT_lab1_report.run.xml'.
 
  ) 
 Here is how much of TeX's memory you used:
- 30153 strings out of 474878
- 572062 string characters out of 5762516
+ 30252 strings out of 474878
+ 574398 string characters out of 5762516
  2078627 words of memory out of 5000000
- 51811 multiletter control sequences out of 15000+600000
- 561557 words of font info for 76 fonts, out of 8000000 for 9000
+ 51892 multiletter control sequences out of 15000+600000
+ 566242 words of font info for 99 fonts, out of 8000000 for 9000
  1348 hyphenation exceptions out of 8191
  85i,12n,93p,1160b,3875s stack positions out of 10000i,1000n,20000p,200000b,200000s
 

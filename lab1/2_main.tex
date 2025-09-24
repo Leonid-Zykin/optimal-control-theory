@@ -182,3 +182,28 @@ if __name__ == "__main__":
             print(int(k), x, u, J)
         print("=> distance to optimum:", np.linalg.norm(Hs[-1,1:3]-w_star))
 \end{lstlisting}
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}{0.48\textwidth}
+        \includegraphics{task1/gd_traj_012.png}
+        \caption{Траектория (x,u), $\gamma=0.12$}
+    \end{subfigure}\hfill
+    \begin{subfigure}{0.48\textwidth}
+        \includegraphics{task1/gd_J_012.png}
+        \caption{$J$ по итерациям, $\gamma=0.12$}
+    \end{subfigure}
+
+    \vspace{0.5em}
+
+    \begin{subfigure}{0.48\textwidth}
+        \includegraphics{task1/gd_traj_005.png}
+        \caption{Траектория (x,u), $\gamma=0.05$}
+    \end{subfigure}\hfill
+    \begin{subfigure}{0.48\textwidth}
+        \includegraphics{task1/gd_J_005.png}
+        \caption{$J$ по итерациям, $\gamma=0.05$}
+    \end{subfigure}
+    \caption{Градиентный спуск: сравнение траекторий и убывания $J$ для двух шагов}
+    \label{fig:gd}
+\end{figure}
