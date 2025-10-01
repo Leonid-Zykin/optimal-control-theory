@@ -1,4 +1,4 @@
-This is XeTeX, Version 3.141592653-2.6-0.999995 (TeX Live 2023/Debian) (preloaded format=xelatex 2025.7.13)  24 SEP 2025 16:02
+This is XeTeX, Version 3.141592653-2.6-0.999995 (TeX Live 2023/Debian) (preloaded format=xelatex 2025.7.13)  24 SEP 2025 16:45
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -1505,20 +1505,21 @@ Package hyperref Warning: Token not allowed in a PDF string (Unicode):
 (hyperref)                removing `\gamma' on input line 122.
 
 
-Overfull \hbox (78.07162pt too wide) detected at line 137
+Overfull \hbox (97.03804pt too wide) detected at line 138
 \OMS/cmsy/m/n/14.4 r\OML/cmm/m/it/14.4 J\OT1/cmr/m/n/14.4 (\OML/cmm/m/it/14.4 x
 [];u[]\OT1/cmr/m/n/14.4 ) = []10(\OMS/cmsy/m/n/14.4 ^^@\OT1/cmr/m/n/14.4 0\OML/
 cmm/m/it/14.4 :\OT1/cmr/m/n/14.4 48) + 3(\OMS/cmsy/m/n/14.4 ^^@\OT1/cmr/m/n/14.
 4 0\OML/cmm/m/it/14.4 :\OT1/cmr/m/n/14.4 12) + 4\OML/cmm/m/it/14.4 ; \OT1/cmr/m
 /n/14.4 3(\OMS/cmsy/m/n/14.4 ^^@\OT1/cmr/m/n/14.4 0\OML/cmm/m/it/14.4 :\OT1/cmr
 /m/n/14.4 48) + 4(\OMS/cmsy/m/n/14.4 ^^@\OT1/cmr/m/n/14.4 0\OML/cmm/m/it/14.4 :
-\OT1/cmr/m/n/14.4 12) + 1[] = (\OMS/cmsy/m/n/14.4 ^^@\OT1/cmr/m/n/14.4 1\OML/cm
-m/m/it/14.4 :\OT1/cmr/m/n/14.4 16\OML/cmm/m/it/14.4 ; \OMS/cmsy/m/n/14.4 ^^@ \O
-T1/cmr/m/n/14.4 0\OML/cmm/m/it/14.4 :\OT1/cmr/m/n/14.4 04)\OML/cmm/m/it/14.4 ;
+\OT1/cmr/m/n/14.4 12) + 1[] = []  = (\OMS/cmsy/m/n/14.4 ^^@\OT1/cmr/m/n/14.4 1\
+OML/cmm/m/it/14.4 :\OT1/cmr/m/n/14.4 16\OML/cmm/m/it/14.4 ; \OMS/cmsy/m/n/14.4 
+^^@ \OT1/cmr/m/n/14.4 0\OML/cmm/m/it/14.4 :\OT1/cmr/m/n/14.4 04)\OML/cmm/m/it/1
+4.4 ;
  []
 
 
-Overfull \hbox (45.6097pt too wide) detected at line 140
+Overfull \hbox (45.6097pt too wide) detected at line 141
 \OT1/cmr/m/n/14.4 (\OML/cmm/m/it/14.4 x[];u[]\OT1/cmr/m/n/14.4 ) = (\OML/cmm/m/
 it/14.4 x[];u[]\OT1/cmr/m/n/14.4 ) \OMS/cmsy/m/n/14.4 ^^@ \OT1/cmr/m/n/14.4 0\O
 ML/cmm/m/it/14.4 :\OT1/cmr/m/n/14.4 12 (\OMS/cmsy/m/n/14.4 ^^@\OT1/cmr/m/n/14.4
@@ -1531,13 +1532,13 @@ cmr/m/n/14.4 3\OML/cmm/m/it/14.4 :\OT1/cmr/m/n/14.4 716\OML/cmm/m/it/14.4 :
  []
 
 
-Underfull \hbox (badness 5667) in paragraph at lines 140--142
+Underfull \hbox (badness 5667) in paragraph at lines 141--143
 \TU/TimesNewRoman(0)/m/n/14.4 Дальнейшие итерации дают знакопеременные приращен
 ия по
  []
 
 [5]
-Overfull \hbox (32.28831pt too wide) detected at line 148
+Overfull \hbox (32.28831pt too wide) detected at line 149
 \OMS/cmsy/m/n/14.4 r\OML/cmm/m/it/14.4 J\OT1/cmr/m/n/14.4 (\OML/cmm/m/it/14.4 x
 [];u[]\OT1/cmr/m/n/14.4 ) = (10(\OMS/cmsy/m/n/14.4 ^^@\OT1/cmr/m/n/14.4 0\OML/c
 mm/m/it/14.4 :\OT1/cmr/m/n/14.4 2) + 3(\OMS/cmsy/m/n/14.4 ^^@\OT1/cmr/m/n/14.4 
@@ -1550,7 +1551,7 @@ it/14.4 ;
  []
 
 
-Overfull \hbox (54.60521pt too wide) detected at line 151
+Overfull \hbox (54.60521pt too wide) detected at line 152
 \OT1/cmr/m/n/14.4 (\OML/cmm/m/it/14.4 x[];u[]\OT1/cmr/m/n/14.4 ) = (\OMS/cmsy/m
 /n/14.4 ^^@\OT1/cmr/m/n/14.4 0\OML/cmm/m/it/14.4 :\OT1/cmr/m/n/14.4 20\OML/cmm/
 m/it/14.4 ; \OMS/cmsy/m/n/14.4 ^^@ \OT1/cmr/m/n/14.4 0\OML/cmm/m/it/14.4 :\OT1/
@@ -1642,10 +1643,6 @@ See the caption package documentation for explanation.
 LaTeX2e <2023-11-01> patch level 1
 L3 programming layer <2020/03/25>
  ***********
-
-
-LaTeX Warning: Label(s) may have changed. Rerun to get cross-references right.
-
 Package rerunfilecheck Info: File `OCT_lab1_report.out' has not changed.
 (rerunfilecheck)             Checksum: 4B15584C9BD3ADA45E21D5632794BF3D;3259.
 Package logreq Info: Writing requests to 'OCT_lab1_report.run.xml'.
