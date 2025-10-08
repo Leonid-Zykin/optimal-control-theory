@@ -1,0 +1,112 @@
+\chapter{Лабораторная работа №5. Оптимальный наблюдатель (фильтр Калмана) и ЛКГ-синтез}
+
+\section*{Постановка (вариант 13)}
+Система с шумами
+\[
+\dot x=Ax+bu+Gw,\qquad y=Cx+v,
+\]
+где
+\[
+A=\begin{bmatrix}0&1\\-4&-7\end{bmatrix},\quad b=\begin{bmatrix}3\\2\end{bmatrix},\quad C=\begin{bmatrix}1&0\end{bmatrix},\quad
+W=\begin{bmatrix}7&4.5\\4.5&6\end{bmatrix},\quad V=2.
+\]
+Требуется построить оптимальный наблюдатель \(\dot{\hat x}=A\hat x+bu+L(y-C\hat x)\) по критерию \(J=\mathrm{E}\,\{e_h^T e_h\}\), где \(e_h=x-\hat x\).
+
+\section{Уравнение Риккати наблюдателя и матрица усилений}
+Для непрерывного фильтра Калмана (Калман–Бьюси) ковариационная матрица ошибки \(P\) удовлетворяет
+\[
+A P + P A^T + G W G^T - P C^T V^{-1} C P = 0,\qquad L = P C^T V^{-1}.
+\]
+При \(W\succ0,\ V>0\) и детектируемости пары \((A,C)\) существует единственное стабилизирующее решение \(P\succeq0\). Далее моделируем при \(u(t)=\sin t\), \(x(0)=[1,0]^T\), \(\hat x(0)=0\), строим \(e_{h1}, e_{h2}, u, J(t)=\int_0^t e_h^T e_h\,d\tau\).
+
+\subsection{Численная реализация}
+\begin{lstlisting}[caption={Kalman observer (variant 13): gain L, simulation and plots},label={lst:kalman13}]
+# lab5/python/kalman_var13.py
+import numpy as np
+from scipy.linalg import solve_continuous_are
+from scipy.integrate import solve_ivp
+import matplotlib.pyplot as plt
+
+A = np.array([[0.0, 1.0], [-4.0, -7.0]])
+b = np.array([[3.0], [2.0]])
+C = np.array([[1.0, 0.0]])
+G = np.eye(2)
+W = np.array([[7.0, 4.5], [4.5, 6.0]])
+V = 2.0
+
+# Observer Riccati: A P + P A^T + G W G^T - P C^T V^{-1} C P = 0
+# Equivalent CARE form: A^T P + P A - P C^T V^{-1} C P + G W G^T = 0
+P = solve_continuous_are(A.T, C.T, G @ W @ G.T, V)
+L = P @ C.T / V
+print("L=", L.ravel())
+
+x0 = np.array([1.0, 0.0])
+xhat0 = np.zeros(2)
+T = (0.0, 10.0)
+
+u = lambda t: np.sin(t)
+
+def odefun(t, z):
+    x = z[:2]
+    xh = z[2:4]
+    y = C @ x
+    uh = u(t)
+    dx = (A @ x + b.flatten()*uh)
+    dxh = (A @ xh + b.flatten()*uh + (L @ (y - C @ xh)).flatten())
+    e = x - xh
+    jdot = float(e @ e)
+    return np.hstack([dx, dxh, jdot])
+
+z0 = np.hstack([x0, xhat0, 0.0])
+sol = solve_ivp(odefun, T, z0, max_step=0.01, rtol=1e-8, atol=1e-10)
+
+t = sol.t
+x = sol.y[0:2,:]
+xh = sol.y[2:4,:]
+Jt = sol.y[4,:]
+Eh = x - xh
+U = np.sin(t)
+
+import os
+os.makedirs('/home/leonidas/projects/itmo/optimal-control-theory/lab5/images/task5', exist_ok=True)
+
+plt.figure(figsize=(6,4))
+plt.plot(t, Eh[0], label='e_h1'); plt.plot(t, Eh[1], label='e_h2')
+plt.xlabel('t'); plt.ylabel('error'); plt.grid(True, alpha=0.3)
+plt.legend(); plt.tight_layout()
+plt.savefig('/home/leonidas/projects/itmo/optimal-control-theory/lab5/images/task5/error.png', dpi=200)
+
+plt.figure(figsize=(6,4))
+plt.plot(t, U)
+plt.xlabel('t'); plt.ylabel('u=sin t'); plt.grid(True, alpha=0.3)
+plt.tight_layout()
+plt.savefig('/home/leonidas/projects/itmo/optimal-control-theory/lab5/images/task5/u.png', dpi=200)
+
+plt.figure(figsize=(6,4))
+plt.plot(t, Jt)
+plt.xlabel('t'); plt.ylabel('J(0,t)'); plt.grid(True, alpha=0.3)
+plt.tight_layout()
+plt.savefig('/home/leonidas/projects/itmo/optimal-control-theory/lab5/images/task5/J.png', dpi=200)
+\end{lstlisting}
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}{0.48\textwidth}
+        \includegraphics{task5/error.png}
+        \caption{Ошибки наблюдения $e_{h1},e_{h2}$}
+    \end{subfigure}\hfill
+    \begin{subfigure}{0.48\textwidth}
+        \includegraphics{task5/u.png}
+        \caption{Возмущающее управление $u=\sin t$}
+    \end{subfigure}
+
+    \vspace{0.5em}
+
+    \begin{subfigure}{0.48\textwidth}
+        \includegraphics{task5/J.png}
+        \caption{Накопленный критерий $J(0,t)=\int_0^t \|e_h\|^2 d\tau$}
+    \end{subfigure}
+    \caption{Оптимальный наблюдатель Калмана: моделирование (вариант 13)}
+\end{figure}
+
+Расчёт дал \(L\approx[1.6197\;-0.4383]^T\). Ошибка наблюдения экспоненциально затухает; интегральный критерий растёт и выходит на плато, соответствующее установившемуся режиме при гармоническом входе.
