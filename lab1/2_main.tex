@@ -14,8 +14,14 @@ J(x,u)=5x^2+2u^2+3xu+4x+u-5,
 \subsection{Случай без ограничений}
 Найдём стационарную точку, приравняв к нулю градиент функции \(J(x,u)\):
 \[
-\nabla J(x,u)=\begin{bmatrix}\dfrac{\partial J}{\partial x}\\[2mm]\dfrac{\partial J}{\partial u}\end{bmatrix}
-=\begin{bmatrix}10x+3u+4\\ 3x+4u+1\end{bmatrix}=\mathbf{0}.
+\nabla J(x,u)=\begin{bmatrix}
+\dfrac{\partial J}{\partial x}\\[1mm]
+\dfrac{\partial J}{\partial u}
+\end{bmatrix}
+=\begin{bmatrix}
+10x+3u+4\\
+3x+4u+1
+\end{bmatrix}=\mathbf{0}.
 \]
 Получаем систему линейных уравнений
 \[
@@ -39,10 +45,15 @@ H=\begin{bmatrix}10&3\\3&4\end{bmatrix},\qquad \Delta_1=10>0,\quad \det H=10\cdo
 Следовательно, \(H\) положительно определена, а найденная стационарная точка является \textbf{единственным глобальным минимумом} квадратичной функции \(J\).
 
 Значение критерия в точке минимума:
-\[
-J(x^{\ast},u^{\ast})=5\Big(\frac{13}{31}\Big)^2+2\Big(\frac{2}{31}\Big)^2+3\Big(-\frac{13}{31}\cdot\frac{2}{31}\Big)+4\Big(-\frac{13}{31}\Big)+\frac{2}{31}-5
-= -\,\frac{5580}{961}\approx -5.804.
-\]
+\begin{align*}
+J(x^{\ast},u^{\ast})
+&=5\Big(\tfrac{13}{31}\Big)^2
+ +2\Big(\tfrac{2}{31}\Big)^2
+ +3\Big(-\tfrac{13}{31}\cdot\tfrac{2}{31}\Big)\\
+&\quad +4\Big(-\tfrac{13}{31}\Big)
+ +\tfrac{2}{31}-5
+ = -\,\tfrac{5580}{961}\approx -5.804.
+\end{align*}
 
 % Далее будут пункты 1.2, 1.3 и раздел 2 (градиентные методы)
 
@@ -130,37 +141,39 @@ print({"x": float(sol[0]), "u": float(sol[1]), "lambda": float(sol[2]), "J": flo
 \begin{enumerate}
  \item \textbf{Колебательная сходимость:} возьмём \(\gamma_1=0.12\in(1/\lambda_{\max},2/\lambda_{\max})\). Первые шаги:
  \[
- (x_1,u_1)=(0,0)-0.12\,(4,1)=(-0.48,-0.12),\quad J_1\approx-3.278;
+ (x_1,u_1)=(0,0)-0.12\,(4,1)=(-0.48,-0.12),\quad J_1\approx-3.278.
  \]
  \[
- \nabla J(x_1,u_1)=\big(10(-0.48)+3(-0.12)+4,\,3(-0.48)+4(-0.12)+1\big)=
- \\ =(-1.16,-0.04),
+ \nabla J(x_1,u_1)=\big(10(-0.48)+3(-0.12)+4,\,3(-0.48)+4(-0.12)+1\big)
+ = (-1.16,-0.04).
  \]
  \[
- (x_2,u_2)=(x_1,u_1)-0.12\,(-1.16,-0.04)=(-0.3408,-0.1152),\quad J_2\approx-3.716.
- \]
+ (x_2,u_2)=(x_1,u_1)-0.12\,(-1.16,-0.04)=(-0.3408,-0.1152),\quad
+J_2\approx-3.716.
+\]
  Дальнейшие итерации дают знакопеременные приращения по «жёсткому» направлению, но монотонное убывание \(J\) до \((x^{\ast},u^{\ast})\).
  \item \textbf{Апериодическая (монотонная) сходимость:} возьмём \(\gamma_2=0.05\). Первые шаги:
  \[
- (x_1,u_1)=(0,0)-0.05\,(4,1)=(-0.20,-0.05),\quad J_1\approx-2.125;
+ (x_1,u_1)=(0,0)-0.05\,(4,1)=(-0.20,-0.05),\quad J_1\approx-2.125.
  \]
  \[
- \nabla J(x_1,u_1)=(10(-0.2)+3(-0.05)+4,\,3(-0.2)+4(-0.05)+1)=(1.85,0.3),
+ \nabla J(x_1,u_1)=(10(-0.2)+3(-0.05)+4,\,3(-0.2)+4(-0.05)+1)=(1.85,\,0.3).
  \]
  \[
- (x_2,u_2)=(-0.20,-0.05)-0.05\,(1.85,0.3)=(-0.2925,-0.065),\quad J_2\approx-2.628.
- \]
+ (x_2,u_2)=(-0.20,-0.05)-0.05\,(1.85,0.3)=(-0.2925,-0.065),\quad
+J_2\approx-2.628.
+\]
  При таком шаге траектория не меняет знак по собственным направлениям и плавно сходится к минимуму.
 \end{enumerate}
 Для воспроизводимых вычислений см. листинг с автоматическим построением траекторий для обоих шагов.
 
-\begin{lstlisting}[caption={Градиентный спуск: две стратегии шага и первые итерации},label={lst:gd}]
+\begin{lstlisting}[caption={Gradient descent: two step sizes and first iterations},label={lst:gd}]
 # lab1/python/task1_gradients.py
 import numpy as np
 
 H = np.array([[10.0, 3.0],[3.0, 4.0]])
-b = np.array([4.0, 1.0])   # grad J = H w + b, где w = [x,u]
-w_star = np.linalg.solve(H, -b)  # аналитический минимум
+b = np.array([4.0, 1.0])   # grad J = H @ w + b, w = [x, u]
+w_star = np.linalg.solve(H, -b)  # analytic minimizer
 
  def grad(w):
      return H @ w + b
@@ -169,7 +182,7 @@ w_star = np.linalg.solve(H, -b)  # аналитический минимум
      w = np.array([0.0, 0.0])
      hist = []
      for k in range(steps):
-         J = 0.5 * w @ (H @ w) + b @ w - 5  # сдвиг константы не влияет на траекторию
+         J = 0.5 * w @ (H @ w) + b @ w - 5  # constant shift does not affect trajectory
          hist.append((k, *w, J))
          w = w - gamma * grad(w)
      return np.array(hist)
@@ -188,23 +201,23 @@ if __name__ == "__main__":
     \centering
     \begin{subfigure}{0.48\textwidth}
         \includegraphics{task1/gd_traj_012.png}
-        \caption{Траектория (x,u), $\gamma=0.12$}
+        \caption{Trajectory (x,u), gamma=0.12}
     \end{subfigure}\hfill
     \begin{subfigure}{0.48\textwidth}
         \includegraphics{task1/gd_J_012.png}
-        \caption{$J$ по итерациям, $\gamma=0.12$}
+        \caption{J vs iterations, gamma=0.12}
     \end{subfigure}
 
     \vspace{0.5em}
 
     \begin{subfigure}{0.48\textwidth}
         \includegraphics{task1/gd_traj_005.png}
-        \caption{Траектория (x,u), $\gamma=0.05$}
+        \caption{Trajectory (x,u), gamma=0.05}
     \end{subfigure}\hfill
     \begin{subfigure}{0.48\textwidth}
         \includegraphics{task1/gd_J_005.png}
-        \caption{$J$ по итерациям, $\gamma=0.05$}
+        \caption{J vs iterations, gamma=0.05}
     \end{subfigure}
-    \caption{Градиентный спуск: сравнение траекторий и убывания $J$ для двух шагов}
+    \caption{Gradient descent: trajectories and J decrease for two step sizes}
     \label{fig:gd}
 \end{figure}
