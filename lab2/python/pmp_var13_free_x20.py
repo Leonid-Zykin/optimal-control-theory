@@ -1,0 +1,103 @@
+import numpy as np
+from numpy.linalg import solve
+import matplotlib.pyplot as plt
+
+T0, T1 = 0.0, 1.0
+
+
+def psi1(t, A, B):
+    return A * np.cos(t) + B * np.sin(t)
+
+
+def psi2(t, A, B):
+    return -A * np.sin(t) + B * np.cos(t)
+
+
+def x1(t, A, B, C, D):
+    return (
+        C * np.cos(t)
+        + D * np.sin(t)
+        + 0.5 * (-A / 2.0 * t * np.cos(t) + B / 2.0 * t * np.sin(t))
+    )
+
+
+def x2(t, A, B, C, D):
+    return (
+        -C * np.sin(t)
+        + D * np.cos(t)
+        + 0.5
+        * (
+            -A / 2.0 * (np.cos(t) - t * np.sin(t))
+            + B / 2.0 * (np.sin(t) + t * np.cos(t))
+        )
+    )
+
+
+# Boundary conditions with free x2(0):
+# x1(0) fixed -> C = 0
+# x2(0) free -> transversality psi2(0) = 0 -> B = 0
+# terminal: x1(1)=2, x2(1)=0 -> two equations for A, D
+
+C = 0.0
+B = 0.0
+
+c1, s1 = np.cos(1.0), np.sin(1.0)
+
+# Build 2x2 system for unknowns [A, D]
+# From x1(1) and x2(1) with B=0, C=0
+row_x1 = [0.5 * (-1.0 / 2.0) * (1.0 * c1), s1]  # coeffs at [A, D]
+row_x2 = [0.5 * (-1.0 / 2.0) * (c1 - 1.0 * s1), c1]
+M = np.array([row_x1, row_x2])
+b = np.array([2.0, 0.0])
+
+A, D = solve(M, b)
+
+N = 400
+T = np.linspace(T0, T1, N)
+PSI2 = psi2(T, A, B)
+U = 0.5 * PSI2
+X1 = x1(T, A, B, C, D)
+X2 = x2(T, A, B, C, D)
+
+print({
+    "A": float(A),
+    "B": float(B),
+    "C": float(C),
+    "D": float(D),
+    "psi2(0)": float(psi2(0.0, A, B)),
+    "x1(0)": float(X1[0]),
+    "x2(0)": float(X2[0]),
+    "x1(1)": float(X1[-1]),
+    "x2(1)": float(X2[-1]),
+})
+
+J = np.trapz(U ** 2, T)
+print({"J": float(J)})
+
+plt.figure(figsize=(6, 4))
+plt.plot(T, U, label="u*(t)")
+plt.xlabel("t")
+plt.ylabel("u")
+plt.title("Optimal control u*(t) (free x2(0))")
+plt.grid(True, alpha=0.3)
+plt.tight_layout()
+plt.savefig(
+    "/home/leonidas/projects/itmo/optimal-control-theory/lab2/images/task2/u_opt_free.png",
+    dpi=200,
+)
+
+plt.figure(figsize=(6, 4))
+plt.plot(T, X1, label="x1(t)")
+plt.plot(T, X2, label="x2(t)")
+plt.xlabel("t")
+plt.ylabel("states")
+plt.title("Optimal trajectory x*(t) (free x2(0))")
+plt.legend()
+plt.grid(True, alpha=0.3)
+plt.tight_layout()
+plt.savefig(
+    "/home/leonidas/projects/itmo/optimal-control-theory/lab2/images/task2/x_opt_free.png",
+    dpi=200,
+)
+
+

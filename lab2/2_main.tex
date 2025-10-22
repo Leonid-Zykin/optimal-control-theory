@@ -20,7 +20,7 @@ J = \int_{0}^{1} u(\tau)^2\,d\tau,
 \[
 \mathcal H(x,u,\psi)= -u^2 + \psi_1 x_2 + \psi_2(-x_1+u).
 \]
-Условия PMP:
+Условия ПМП:
 \[
 \dot x = \frac{\partial \mathcal H}{\partial \psi},\qquad
 \dot \psi = -\frac{\partial \mathcal H}{\partial x},\qquad
@@ -112,8 +112,8 @@ J_{\min} = \tfrac{1}{8}\big[A^2(1-\sin 1\cos 1) - 2AB\sin^2 1 + B^2(1+\sin 1\cos
 \subsection{Численное решение и проверка}
 Используем аналитические выражения для \(\psi\) и общее решение для \(x_1\). Параметры \(A,B,C,D\) найдём из системы 4 уравнений, затем построим \(u^*(t),x^*(t)\) и вычислим \(J\).
 
-\begin{lstlisting}[caption={PMP: synthesis for variant 13, validation and plots},label={lst:pmp13}]
-# lab2/python/pmp_var13.py
+\begin{lstlisting}[caption={ПМП: synthesis for variant 13, validation and plots},label={lst:ПМП13}]
+# lab2/python/ПМП_var13.py
 import numpy as np
 from numpy import sin, cos
 from numpy.linalg import solve
@@ -231,8 +231,8 @@ plt.savefig("/home/leonidas/projects/itmo/optimal-control-theory/lab2/images/tas
         \includegraphics{task2/x_opt.png}
         \caption{Оптимальная траектория $x^*(t)$}
     \end{subfigure}
-    \caption{Результаты синтеза по PMP (вариант 13)}
-    \label{fig:l2:pmp}
+    \caption{Результаты синтеза по ПМП (вариант 13)}
+    \label{fig:l2:ПМП}
 \end{figure}
 
 \section{Результаты численного решения}
@@ -422,3 +422,63 @@ plt.savefig('/home/leonidas/projects/itmo/optimal-control-theory/lab2/images/tas
 Градиент показывает, что критерий наиболее чувствителен к отклонениям параметра B (коэффициент при sin t), чем к параметру A (коэффициент при cos t).
 
 Это объясняется тем, что в оптимальном решении параметр B имеет большее влияние на траекторию системы и, соответственно, на критерий качества.
+
+\section{Случай со свободным начальным значением $x_2(0)$}
+Рассмотрим модификацию: $x_1(0)=0$ задано, а $x_2(0)$ не задано (свободно); конечные условия те же: $x_1(1)=2$, $x_2(1)=0$.
+
+Имеем те же формулы для сопряжённых переменных: $\psi_1(t)=A\cos t + B\sin t$, $\psi_2(t)=-A\sin t + B\cos t$. Для свободного $x_2(0)$ из условий оптимальности получается простое начальное условие на сопряжённую переменную:
+\[
+\psi_2(0)=0 \;\Rightarrow\; B=0.
+\]
+Так как $x_1(0)=0$, из общего решения для $x_1$ следует $C=0$. Тогда неизвестными остаются только $A$ и $D$, которые находятся из терминальных условий при $t=1$:
+\begin{align}
+ x_1(1) &= -\tfrac{A}{4}\cos 1 + D\sin 1 = 2,\\
+ x_2(1) &= -\tfrac{A}{4}(\cos 1 - \sin 1) + D\cos 1 = 0.
+\end{align}
+Решая эту систему вручную, удобно обозначить $c=\cos 1$, $s=\sin 1$. Из второго уравнения
+\[
+ D = \frac{A}{4}\,\frac{c-s}{c},
+\]
+и, подставляя в первое уравнение, получаем
+\[
+ A\,\frac{sc-1}{c} = 8 \;\Rightarrow\; A = \frac{8c}{sc-1},\qquad D = \frac{A}{4}\,\frac{c-s}{c}.
+\]
+Отсюда оптимальное управление и траектория в явном виде (напомним, $B=0$, $C=0$):
+\begin{align}
+ u^*(t) &= \tfrac{1}{2}\psi_2(t) = -\tfrac{A}{2}\sin t = \frac{4c}{1-sc}\,\sin t,\\
+ x_1(t) &= D\sin t - \tfrac{A}{4}\,t\cos t,\\
+ x_2(t) &= D\cos t - \tfrac{A}{4}\,(\cos t - t\sin t).
+\end{align}
+Значение критерия также выражается компактно. Поскольку $\psi_2(t)=-A\sin t$, имеем
+\[
+ J_{\min}^{\text{free}} = \tfrac{1}{4}\int_0^1 \psi_2(t)^2 dt = \tfrac{A^2}{4}\int_0^1 \sin^2 t\,dt = \frac{A^2}{8}\,(1-sc) = \frac{8c^2}{1-sc}.
+\]
+Подставляя $\sin 1$ и $\cos 1$, получаем численно
+\[
+ A\approx -7.926,\; D\approx 1.104,\; u^*(t)\approx 7.884\,\sin t,\; J_{\min}^{\text{free}}\approx 4.2824.
+\]
+
+\paragraph{Итоговый ответ.} При свободном $x_2(0)$: $B=0$, $C=0$,
+\[
+ A = \frac{8\cos 1}{\sin 1\cos 1 - 1},\quad D = \frac{A}{4}\,\frac{\cos 1 - \sin 1}{\cos 1},\quad u^*(t) = \frac{4\cos 1}{1-\sin 1\cos 1}\,\sin t,
+\]
+\[
+ x_1(t) = D\sin t - \tfrac{A}{4}\,t\cos t,\quad x_2(t) = D\cos t - \tfrac{A}{4}(\cos t - t\sin t),\quad J_{\min}^{\text{free}} =
+\]
+\[
+   = \dfrac{8\cos^2 1}{1-\sin 1\cos 1} \approx 4.2824.
+\]
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}{0.48\textwidth}
+        \includegraphics{task2/u_opt_free.png}
+        \caption{Оптимальное управление (свободное $x_2(0)$)}
+    \end{subfigure}\hfill
+    \begin{subfigure}{0.48\textwidth}
+        \includegraphics{task2/x_opt_free.png}
+        \caption{Оптимальная траектория (свободное $x_2(0)$)}
+    \end{subfigure}
+    \caption{Решение при свободном начальном значении $x_2(0)$}
+    \label{fig:l2:ПМП-free}
+\end{figure}
