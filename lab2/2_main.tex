@@ -426,22 +426,58 @@ plt.savefig('/home/leonidas/projects/itmo/optimal-control-theory/lab2/images/tas
 \section{Случай со свободным начальным значением $x_2(0)$}
 Рассмотрим модификацию: $x_1(0)=0$ задано, а $x_2(0)$ не задано (свободно); конечные условия те же: $x_1(1)=2$, $x_2(1)=0$.
 
-Имеем те же формулы для сопряжённых переменных: $\psi_1(t)=A\cos t + B\sin t$, $\psi_2(t)=-A\sin t + B\cos t$. Для свободного $x_2(0)$ из условий оптимальности получается простое начальное условие на сопряжённую переменную:
+\subsection{Определение коэффициентов}
+Имеем те же формулы для сопряжённых переменных: $\psi_1(t)=A\cos t + B\sin t$, $\psi_2(t)=-A\sin t + B\cos t$. 
+
+\textbf{Шаг 1: Нахождение B.} Для свободного $x_2(0)$ из условий оптимальности получается:
 \[
-\psi_2(0)=0 \;\Rightarrow\; B=0.
+\psi_2(0)=0 \;\Rightarrow\; -A\sin 0 + B\cos 0 = B = 0.
 \]
-Так как $x_1(0)=0$, из общего решения для $x_1$ следует $C=0$. Тогда неизвестными остаются только $A$ и $D$, которые находятся из терминальных условий при $t=1$:
+
+\textbf{Шаг 2: Нахождение C.} Из условия $x_1(0)=0$ и общего решения:
+\[
+x_1(t) = C\cos t + D\sin t + \tfrac{1}{2}\Big(-\tfrac{A}{2}t\cos t + \tfrac{B}{2}t\sin t\Big)
+\]
+При $t=0$:
+\[
+x_1(0) = C\cos 0 + D\sin 0 + \tfrac{1}{2}\Big(-\tfrac{A}{2}\cdot 0\cdot\cos 0 + \tfrac{B}{2}\cdot 0\cdot\sin 0\Big) = C = 0
+\]
+
+\textbf{Шаг 3: Система для A и D.} Теперь $B=0$, $C=0$. Из терминальных условий при $t=1$:
 \begin{align}
- x_1(1) &= -\tfrac{A}{4}\cos 1 + D\sin 1 = 2,\\
- x_2(1) &= -\tfrac{A}{4}(\cos 1 - \sin 1) + D\cos 1 = 0.
+ x_1(1) &= D\sin 1 + \tfrac{1}{2}\Big(-\tfrac{A}{2}\cdot 1\cdot\cos 1\Big) = D\sin 1 - \tfrac{A}{4}\cos 1 = 2,\\
+ x_2(1) &= D\cos 1 + \tfrac{1}{2}\Big(-\tfrac{A}{2}(\cos 1 - 1\cdot\sin 1)\Big) = D\cos 1 - \tfrac{A}{4}(\cos 1 - \sin 1) = 0.
 \end{align}
-Решая эту систему вручную, удобно обозначить $c=\cos 1$, $s=\sin 1$. Из второго уравнения
+
+Обозначим $c=\cos 1$, $s=\sin 1$. Система принимает вид:
+\begin{align}
+ Ds - \tfrac{A}{4}c &= 2,\\
+ Dc - \tfrac{A}{4}(c-s) &= 0.
+\end{align}
+
+\textbf{Шаг 4: Решение системы.} Из второго уравнения:
 \[
- D = \frac{A}{4}\,\frac{c-s}{c},
+Dc = \tfrac{A}{4}(c-s) \;\Rightarrow\; D = \tfrac{A}{4}\cdot\frac{c-s}{c}
 \]
-и, подставляя в первое уравнение, получаем
+
+Подставляя в первое уравнение:
 \[
- A\,\frac{sc-1}{c} = 8 \;\Rightarrow\; A = \frac{8c}{sc-1},\qquad D = \frac{A}{4}\,\frac{c-s}{c}.
+\tfrac{A}{4}\cdot\frac{c-s}{c}\cdot s - \tfrac{A}{4}c = 2 \;\Rightarrow\; \tfrac{A}{4}\left(\frac{s(c-s)}{c} - c\right) = 2
+\]
+
+Упрощая выражение в скобках:
+\[
+\frac{s(c-s)}{c} - c = \frac{s(c-s) - c^2}{c} = \frac{sc - s^2 - c^2}{c} = \frac{sc - 1}{c}
+\]
+
+Получаем:
+\[
+\tfrac{A}{4}\cdot\frac{sc-1}{c} = 2 \;\Rightarrow\; A = \frac{8c}{sc-1}
+\]
+
+Тогда:
+\[
+D = \tfrac{A}{4}\cdot\frac{c-s}{c} = \frac{2c}{sc-1}\cdot\frac{c-s}{c} = \frac{2(c-s)}{sc-1}
 \]
 Отсюда оптимальное управление и траектория в явном виде (напомним, $B=0$, $C=0$):
 \begin{align}
@@ -449,13 +485,35 @@ plt.savefig('/home/leonidas/projects/itmo/optimal-control-theory/lab2/images/tas
  x_1(t) &= D\sin t - \tfrac{A}{4}\,t\cos t,\\
  x_2(t) &= D\cos t - \tfrac{A}{4}\,(\cos t - t\sin t).
 \end{align}
+
+\subsection{Численные значения}
+Подставляя $\sin 1 \approx 0.8415$, $\cos 1 \approx 0.5403$:
+\begin{align}
+ sc &= \sin 1 \cos 1 \approx 0.4546,\\
+ c-s &= \cos 1 - \sin 1 \approx -0.3012,\\
+ sc-1 &= 0.4546 - 1 = -0.5454
+\end{align}
+
+Получаем:
+\begin{align}
+ A &= \frac{8c}{sc-1} = \frac{8 \cdot 0.5403}{-0.5454} \approx -7.926,\\
+ D &= \frac{2(c-s)}{sc-1} = \frac{2 \cdot (-0.3012)}{-0.5454} \approx 1.104
+\end{align}
+
+Оптимальное управление:
+\[
+u^*(t) = \frac{4c}{1-sc}\sin t = \frac{4 \cdot 0.5403}{1-0.4546}\sin t \approx 7.884\sin t
+\]
+
+\subsection{Вычисление критерия качества}
 Значение критерия также выражается компактно. Поскольку $\psi_2(t)=-A\sin t$, имеем
 \[
  J_{\min}^{\text{free}} = \tfrac{1}{4}\int_0^1 \psi_2(t)^2 dt = \tfrac{A^2}{4}\int_0^1 \sin^2 t\,dt = \frac{A^2}{8}\,(1-sc) = \frac{8c^2}{1-sc}.
 \]
-Подставляя $\sin 1$ и $\cos 1$, получаем численно
+
+Подставляя численные значения:
 \[
- A\approx -7.926,\; D\approx 1.104,\; u^*(t)\approx 7.884\,\sin t,\; J_{\min}^{\text{free}}\approx 4.2824.
+J_{\min}^{\text{free}} = \frac{8 \cdot (0.5403)^2}{1-0.4546} = \frac{8 \cdot 0.2919}{0.5454} \approx 4.2824
 \]
 
 \paragraph{Итоговый ответ.} При свободном $x_2(0)$: $B=0$, $C=0$,
@@ -466,7 +524,7 @@ plt.savefig('/home/leonidas/projects/itmo/optimal-control-theory/lab2/images/tas
  x_1(t) = D\sin t - \tfrac{A}{4}\,t\cos t,\quad x_2(t) = D\cos t - \tfrac{A}{4}(\cos t - t\sin t),\quad J_{\min}^{\text{free}} =
 \]
 \[
-   = \dfrac{8\cos^2 1}{1-\sin 1\cos 1} \approx 4.2824.
+    = \dfrac{8\cos^2 1}{1-\sin 1\cos 1} \approx 4.2824.
 \]
 
 \begin{figure}[H]
