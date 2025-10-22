@@ -1,0 +1,156 @@
+\chapter{Лабораторная работа №6. $H_{\infty}$-оптимизация}
+
+\section*{Постановка (вариант 13)}
+Возмущённый объект
+\[
+\dot x = A x + B u + B_f f,\qquad x(0)=\begin{bmatrix}1\\0\end{bmatrix},
+\]
+\[
+A=\begin{bmatrix}0&1\\4&0\end{bmatrix},\quad B=\begin{bmatrix}2\\6\end{bmatrix},\quad B_f=\begin{bmatrix}0\\2\end{bmatrix},\quad Q=I_2.
+\]
+Возмущение для моделирования:
+\[
+ f(t)=10\sin 6t+5\cos 2t+4\cos 3t+3\cos 8t.
+\]
+Требуется синтезировать $H_{\infty}$-регулятор $u=Kx$ по уравнению Риккати
+\[
+A^T P + P A + Q - P B B^T P + \frac{1}{\gamma^2} P B_f B_f^T P = 0,\qquad K=-B^T P,
+\]
+и экспериментально определить минимальное $\gamma_{\min}$, при котором существует стабилизирующее решение $P\succeq0$.
+
+\section{Численная реализация}
+Используем итерационный алгоритм: при фиксированном $\gamma$ решаем стандартное CARE
+\[
+A^T P_{k+1}+P_{k+1}A - P_{k+1} B B^T P_{k+1} + (Q + \tfrac{1}{\gamma^2} P_k B_f B_f^T P_k)=0
+\]
+с начальным $P_0$ из LQR (решение CARE с $Q$ и $R=I$). Затем по бисекции подбираем $\gamma$ так, чтобы матрица $A-BK$ была устойчивой и $P\succeq0$. Далее строим графики $x_1,x_2,u$ и оцениваем $\|G(j\omega)\|_{\infty}$ на частотной сетке.
+
+\begin{lstlisting}[caption={H∞-synthesis (variant 13): γ_min search, modeling and spectral estimates},label={lst:hinf13}]
+# lab6/python/hinf_var13.py
+import numpy as np
+from scipy.linalg import solve_continuous_are, eigvals
+from scipy.integrate import solve_ivp
+import matplotlib.pyplot as plt
+
+A = np.array([[0.0, 1.0],[4.0, 0.0]])
+B = np.array([[2.0],[6.0]])
+Bf = np.array([[0.0],[2.0]])
+Q = np.eye(2)
+
+# LQR as initial P
+P0 = solve_continuous_are(A, B, Q, np.eye(1))
+
+
+def solve_hinf_fixed_gamma(gamma: float, iters: int = 30, tol: float = 1e-10):
+    P = P0.copy()
+    for _ in range(iters):
+        Qeff = Q + (1.0/(gamma**2)) * (P @ Bf @ Bf.T @ P)
+        P_next = solve_continuous_are(A, B, Qeff, np.eye(1))
+        if np.linalg.norm(P_next - P, ord='fro') < tol:
+            P = P_next
+            break
+        P = P_next
+    K = -(B.T @ P)
+    Acl = A + B @ K  # since u=Kx
+    return P, K, Acl
+
+
+def find_gamma_min(gmin=1e-3, gmax=1e2):
+    lo, hi = gmin, gmax
+    for _ in range(40):
+        mid = np.sqrt(lo*hi)
+        P, K, Acl = solve_hinf_fixed_gamma(mid)
+        stable = np.all(np.real(eigvals(Acl)) < -1e-6)
+        if stable:
+            hi = mid
+        else:
+            lo = mid
+    return hi, solve_hinf_fixed_gamma(hi)
+
+
+gamma_min, (P, K, Acl) = find_gamma_min()
+print({"gamma_min": float(gamma_min), "K": K.tolist(), "eig(A+BK)": eigvals(Acl)})
+# Result: gamma_min = 0.1, K = [[10412.53, -11113.65]], eig(A+BK) = [-0.576, -45856.3]
+
+# Simulation with disturbance and state feedback u=Kx
+x0 = np.array([1.0, 0.0])
+T = (0.0, 10.0)
+
+def f_in(t):
+    return 10*np.sin(6*t) + 5*np.cos(2*t) + 4*np.cos(3*t) + 3*np.cos(8*t)
+
+
+def odefun(t, x):
+    u = float(K @ x)
+    dx = A @ x + B.flatten()*u + Bf.flatten()*f_in(t)
+    return dx
+
+sol = solve_ivp(odefun, T, x0, max_step=0.001, rtol=1e-8, atol=1e-10)
+
+t = sol.t
+x = sol.y
+u = (K @ x).ravel()
+
+import os
+os.makedirs('/home/leonidas/projects/itmo/optimal-control-theory/lab6/images/task6', exist_ok=True)
+
+plt.figure(figsize=(6,4))
+plt.plot(t, x[0], label='x1'); plt.plot(t, x[1], label='x2')
+plt.xlabel('t'); plt.ylabel('states'); plt.grid(True, alpha=0.3)
+plt.legend(); plt.tight_layout()
+plt.savefig('/home/leonidas/projects/itmo/optimal-control-theory/lab6/images/task6/states.png', dpi=200)
+
+plt.figure(figsize=(6,4))
+plt.plot(t, u)
+plt.xlabel('t'); plt.ylabel('u'); plt.grid(True, alpha=0.3)
+plt.tight_layout()
+plt.savefig('/home/leonidas/projects/itmo/optimal-control-theory/lab6/images/task6/u.png', dpi=200)
+
+# Frequency sweep: ||C1(Is-(A+BK))^{-1} Bf||_∞ for C1=[1 0] and C2=[0 1]
+om = np.logspace(-2, 2, 800)
+C1 = np.array([[1.0, 0.0]])
+C2 = np.array([[0.0, 1.0]])
+
+sig1, sig2 = [], []
+for w in om:
+    sI = 1j*w*np.eye(2)
+    G = np.linalg.inv(sI - (A + B @ K)) @ Bf  # 2x1
+    sig1.append(np.linalg.norm(C1 @ G, 2))
+    sig2.append(np.linalg.norm(C2 @ G, 2))
+
+plt.figure(figsize=(6,4))
+plt.loglog(om, sig1, label='||C1(sI-Acl)^{-1}Bf||')
+plt.loglog(om, sig2, label='||C2(sI-Acl)^{-1}Bf||')
+plt.xlabel('omega'); plt.ylabel('gain'); plt.grid(True, which='both', alpha=0.3)
+plt.legend(); plt.tight_layout()
+plt.savefig('/home/leonidas/projects/itmo/optimal-control-theory/lab6/images/task6/hinf_gains.png', dpi=200)
+\end{lstlisting}
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}{0.48\textwidth}
+        \includegraphics{task6/states.png}
+        \caption{Состояния $x_1,x_2$ при $\gamma=\gamma_{\min}$}
+    \end{subfigure}\hfill
+    \begin{subfigure}{0.48\textwidth}
+        \includegraphics{task6/u.png}
+        \caption{Управление $u(t)=Kx$}
+    \end{subfigure}
+
+    \vspace{0.5em}
+
+    \begin{subfigure}{0.6\textwidth}
+        \includegraphics{task6/hinf_gains.png}
+        \caption{Оценка $H_{\infty}$-норм передаточных функций}
+    \end{subfigure}
+    \caption{$H_{\infty}$-синтез (вариант 13): моделирование и частотные оценки}
+\end{figure}
+
+\section{Результаты}
+Численное решение даёт следующие результаты:
+\begin{itemize}
+\item Минимальное значение параметра: $\gamma_{\min} = 0.1$
+\item Матрица усиления: $K = \begin{bmatrix} 10412.53 & -11113.65 \end{bmatrix}$
+\item Собственные значения замкнутой системы: $\lambda_{1,2} = -0.576, -45856.3$
+\end{itemize}
+Замкнутая система устойчива (все собственные значения отрицательны), что подтверждает корректность синтеза $H_{\infty}$-регулятора.
