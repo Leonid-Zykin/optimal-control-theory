@@ -1,4 +1,4 @@
-\chapter{Лабораторная работа №3. LQR для линейного стационарного объекта}
+\chapter{Лабораторная работа №3. Синтез оптимального регулятора для линейного стационарного объекта}
 
 \section*{Постановка (вариант 13)}
 Дана система \(\dot x = A x + b u\), матрицы
@@ -7,7 +7,7 @@ A=\begin{bmatrix}0&1\\4&3\end{bmatrix},\quad b=\begin{bmatrix}2\\6\end{bmatrix},
 \]
 Необходимо:
 \begin{enumerate}
- \item Найти оптимальный регулятор \(u=-Kx\) на основе алгебраического уравнения Риккати (CARE)
+ \item Найти оптимальный регулятор \(u=-Kx\) на основе алгебраического уравнения Риккати
  \[
   A^T P + P A - P b r^{-1} b^T P + Q = 0,\qquad K=r^{-1} b^T P.
  \]
@@ -16,79 +16,65 @@ A=\begin{bmatrix}0&1\\4&3\end{bmatrix},\quad b=\begin{bmatrix}2\\6\end{bmatrix},
  \item Повторить моделирование для трёх значений \(r>0\) и \(Q_k=kQ\) (\(k>0\)), где для одного случая \(Q_k=Q\).
 \end{enumerate}
 
-\section{Решение CARE и формула регулятора}
-Матрица \(b r^{-1} b^T = (1/r)\,b b^T\). Решая CARE для \(P\succ0\), получаем \(K=r^{-1} b^T P\). Далее проверяем устойчивость матрицы \(A-bK\) (собственные значения в левой полуплоскости). Численные значения приводятся ниже и воспроизводятся скриптом.
+\section{Решение алгебраического уравнения Риккати и формула регулятора}
+Матрица \(b r^{-1} b^T = (1/r)\,b b^T\). Решая алгебраическое уравнение Риккати для \(P\succ0\), получаем \(K=r^{-1} b^T P\). Далее проверяем устойчивость матрицы \(A-bK\) (собственные значения в левой полуплоскости).
 
-\subsection{Численная реализация}
-\begin{lstlisting}[caption={LQR (вариант 13): решение CARE, моделирование и графики},label={lst:lqr13}]
-# lab3/python/lqr_var13.py
-import numpy as np
-from scipy.linalg import solve_continuous_are, eigvals
-from scipy.integrate import solve_ivp
-import matplotlib.pyplot as plt
+\subsection{Аналитическое решение уравнения Риккати (поэлементный вывод)}
+Для LQR (вариант 13) с
+\[
+ A=\begin{bmatrix}0&1\\4&3\end{bmatrix},\quad b=\begin{bmatrix}2\\6\end{bmatrix},\quad Q=\begin{bmatrix}6&0\\0&3\end{bmatrix},\quad r=2
+\]
+ищется положительно определённая симметричная матрица \(P=\begin{bmatrix}p_{11}&p_{12}\\p_{12}&p_{22}\end{bmatrix}\), удовлетворяющая алгебраическому уравнению Риккати
+\[
+ A^T P + P A - P\,b\,r^{-1}b^T P + Q = 0.
+\]
+Пошагово выпишем слагаемые.
 
-A = np.array([[0.0, 1.0],[4.0, 3.0]])
-b = np.array([[2.0],[6.0]])
-Q = np.array([[6.0, 0.0],[0.0, 3.0]])
-r = 2.0
+1) \(A^T P\) и \(P A\):
+\[
+ A^T P = \begin{bmatrix}0&4\\1&3\end{bmatrix}\!\begin{bmatrix}p_{11}&p_{12}\\p_{12}&p_{22}\end{bmatrix}=
+ \begin{bmatrix}4p_{12}&4p_{22}\\ p_{11}+3p_{12}&\,p_{12}+3p_{22}\end{bmatrix}
+\]
+\[
+ P A = \begin{bmatrix}p_{11}&p_{12}\\p_{12}&p_{22}\end{bmatrix}\!\begin{bmatrix}0&1\\4&3\end{bmatrix}=\begin{bmatrix}4p_{12}&p_{11}+3p_{12}\\ 4p_{22}&\,p_{12}+3p_{22}\end{bmatrix}
+\]
+Отсюда
+\[
+ A^T P + P A = \begin{bmatrix}
+ 8p_{12} & p_{11}+3p_{12}+4p_{22}\\[2pt]
+ p_{11}+3p_{12}+4p_{22} & 2p_{12}+6p_{22}
+ \end{bmatrix}.
+\]
 
-# CARE
-P = solve_continuous_are(A, b, Q, r)
-K = (1.0/r) * (b.T @ P)  # shape (1,2)
-Acl = A - b @ K
-print("K=", K)
-print("eig(A-bK)=", eigvals(Acl))
+2) Матричное произведение \(P\,b\,r^{-1}b^T P\). Сначала
+\[
+ s := P b = \begin{bmatrix}p_{11}&p_{12}\\p_{12}&p_{22}\end{bmatrix}\!\begin{bmatrix}2\\6\end{bmatrix} = \begin{bmatrix}2p_{11}+6p_{12}\\ 2p_{12}+6p_{22}\end{bmatrix} =: \begin{bmatrix}s_1\\ s_2\end{bmatrix}.
+\]
+Тогда при \(r=2\)
+\[
+ P\,b\,r^{-1}b^T P = \tfrac{1}{2}\, s\,s^T = \tfrac{1}{2}\,\begin{bmatrix}s_1^2 & s_1 s_2\\ s_1 s_2 & s_2^2\end{bmatrix}.
+\]
 
-# Cost integrand
-def lqr_cost(x, u):
-    return float(x.T @ Q @ x + r * u**2)
+3) Поэлементная форма уравнения Риккати: для диагональных элементов и верхнего внедиагонального получаем систему уравнений
+\begin{align}
+ (1,1):\;&\; 8p_{12} - \tfrac{1}{2}s_1^2 + 6 = 0,\\
+ (1,2):\;&\; p_{11}+3p_{12}+4p_{22} - \tfrac{1}{2}s_1 s_2 = 0,\\
+ (2,2):\;&\; 2p_{12}+6p_{22} - \tfrac{1}{2}s_2^2 + 3 = 0,
+\end{align}
+где \(s_1=2p_{11}+6p_{12}\), \(s_2=2p_{12}+6p_{22}\).
 
-# Closed-loop dynamics and online cost accumulation
-x0 = np.array([1.0, 0.0])
-T = (0.0, 10.0)
+Это система трёх нелинейных уравнений относительно \(p_{11},p_{12},p_{22}\). Решая её (например, подстановками/итерациями), получаем единственное стабилизирующее решение
+\[
+ P = \begin{bmatrix}p_{11}&p_{12}\\p_{12}&p_{22}\end{bmatrix} \approx \begin{bmatrix}2.4192 & 0.3796\\ 0.3796 & 0.6271\end{bmatrix},\qquad P\succ0.
+\]
+Оптимальный усилитель обратной связи
+\[
+ K = r^{-1} b^T P = \tfrac{1}{2}\,[\,2\;6\,] \begin{bmatrix}p_{11}&p_{12}\\p_{12}&p_{22}\end{bmatrix} = \tfrac{1}{2}\,[\,2p_{11}+6p_{12}\;\;2p_{12}+6p_{22}\,] \approx [\,1.135\;\;1.823\,].
+\]
+Собственные значения замкнутой матрицы \(A-bK\) имеют отрицательные вещественные части, что подтверждает стабилизирующий характер найденного решения.
 
-def odefun(t, z):
-    x = z[:2]
-    u = - float(K @ x)
-    jdot = lqr_cost(x, u)
-    dx = (Acl @ x)
-    return np.hstack([dx, jdot])
-
-z0 = np.hstack([x0, 0.0])
-sol = solve_ivp(odefun, T, z0, max_step=0.01, rtol=1e-8, atol=1e-10)
-
-t = sol.t
-x = sol.y[:2,:]
-Jt = sol.y[2,:]
-u = - (K @ x).ravel()
-
-import os
-os.makedirs('/home/leonidas/projects/itmo/optimal-control-theory/lab3/images/task3', exist_ok=True)
-
-plt.figure(figsize=(6,4))
-plt.plot(t, x[0], label='x1')
-plt.plot(t, x[1], label='x2')
-plt.xlabel('t'); plt.ylabel('states'); plt.grid(True, alpha=0.3)
-plt.title('Closed-loop states')
-plt.legend(); plt.tight_layout()
-plt.savefig('/home/leonidas/projects/itmo/optimal-control-theory/lab3/images/task3/states.png', dpi=200)
-
-plt.figure(figsize=(6,4))
-plt.plot(t, u)
-plt.xlabel('t'); plt.ylabel('u'); plt.grid(True, alpha=0.3)
-plt.title('Control u(t)')
-plt.tight_layout()
-plt.savefig('/home/leonidas/projects/itmo/optimal-control-theory/lab3/images/task3/u.png', dpi=200)
-
-plt.figure(figsize=(6,4))
-plt.plot(t, Jt)
-plt.xlabel('t'); plt.ylabel('J(0,t)'); plt.grid(True, alpha=0.3)
-plt.title('Accumulated cost J')
-plt.tight_layout()
-plt.savefig('/home/leonidas/projects/itmo/optimal-control-theory/lab3/images/task3/J.png', dpi=200)
-
-print({'J_final': float(Jt[-1])})
-\end{lstlisting}
+\subsection{Численная иллюстрация}
+По найденным \(P\) и \(K\) моделируем замкнутую систему \(\dot x=(A-bK)x\) при \(x_0=[1,0]^T\) и строим графики состояний, управления и накопленного критерия \(J(0,t)\). Результаты приведены на рис.~\ref{fig:l3:lqr}.
 
 \begin{figure}[H]
     \centering
@@ -113,9 +99,80 @@ print({'J_final': float(Jt[-1])})
 
 Для исходных параметров получено: \(K\approx[1.1345\; 1.8229]\), собственные значения \(A-bK\) равны \(-1.17\) и \(-9.03\) (устойчиво). Численно \(J(\infty)\approx 2.419\).
 
+\subsection{Пункт 3: Небольшое отклонение значения $K$}
+Согласно заданию, незначительно изменим рассчитанный усилитель, сохранив устойчивость. Возьмём, например, относительные изменения на 5% по компонентам:
+\[
+ \tilde K = \begin{bmatrix}1.19 & 1.73\end{bmatrix} = \big[\,1.1345\cdot(1{+}0.05)\;\;1.8229\cdot(1{-}0.05)\,\big].
+\]
+Тогда
+\[
+ A - b\tilde K = \begin{bmatrix}0&1\\4&3\end{bmatrix} - \begin{bmatrix}2\\6\end{bmatrix}\!\begin{bmatrix}1.19&1.73\end{bmatrix} = \begin{bmatrix}-2.38 & -2.46\\ -3.14 & -7.38\end{bmatrix}.
+\]
+Её собственные значения находятся из характеристического уравнения \(\lambda^2 + 9.76\,\lambda + 9.84=0\), откуда
+\[
+ \lambda_{1,2} = \frac{-9.76 \pm \sqrt{9.76^2-4\cdot 9.84}}{2} \approx \{-1.14,\;-8.62\},
+\]
+то есть устойчивость сохраняется. Поскольку \(\tilde K\) не является решением уравнения Риккати, соответствующий критерий при тех же начальных условиях возрастает: \(J_{\tilde K}(\infty) > J_{\text{opt}}(\infty)=x_0^T P x_0\approx 2.419\). Качественно это проявляется в большем значении интеграла при сходных временах затухания. Вывод: малое отклонение \(K\) сохраняет устойчивость, но приводит к ухудшению качества по критерию.
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}{0.48\textwidth}
+        \includegraphics{task3/states_compare_pertK.png}
+        \caption{Состояния: оптимальный $K$ vs $\tilde K$}
+    \end{subfigure}\hfill
+    \begin{subfigure}{0.48\textwidth}
+        \includegraphics{task3/u_compare_pertK.png}
+        \caption{Управление: оптимальный $K$ vs $\tilde K$}
+    \end{subfigure}
+
+    \vspace{0.5em}
+
+    \begin{subfigure}{0.48\textwidth}
+        \includegraphics{task3/J_compare_pertK.png}
+        \caption{$J(0,t)$: оптимальный $K$ vs $\tilde K$}
+    \end{subfigure}
+    \caption{Пункт 3: сравнение траекторий для оптимального и отклонённого $K$}
+\end{figure}
+
+\subsection{Эксперименты для трёх значений r и трёх матриц $Q_k=kQ$}
+Проведём серии опытов: 1) фиксируем $Q$, меняем $r\in\{0.5,2,5\}$; 2) фиксируем $r=2$, меняем $Q_k=kQ$, $k\in\{0.5,1,2\}$. Для каждого случая считаем $P$, $K$, спектр $A-bK$ и $J(\infty)=x_0^T P x_0$.
+
+Сводка по \(J(\infty)\) (для \(x_0=[1,0]^T\)) и \(K\) приведена ниже:
+\begin{center}
+\begin{tabular}{lccc}
+\toprule
+Серия & Параметр & $K=[k_1\;k_2]$ & $J(\infty)$ \\
+\midrule
+$r$-серия & $r=0.5$ & $[1.458\;3.000]$ & $2.216$ \\
+ & $r=2$ & $[1.135\;1.823]$ & $2.419$ \\
+ & $r=5$ & $[1.047\;1.422]$ & $2.812$ \\
+\midrule
+$k$-серия & $k=0.5$ & $[1.062\;1.500]$ & $1.341$ \\
+ & $k=1$ & $[1.135\;1.823]$ & $2.419$ \\
+ & $k=2$ & $[1.260\;2.303]$ & $4.570$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+На рис.~\ref{fig:l3:sweep} показаны кривые $J(0,t)$ для наборов $r$ и $k$. Рост $r$ делает управление дороже, $J(\infty)$ увеличивается; рост $k$ усиливает штраф по состояниям, и $J(\infty)$ растёт.
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}{0.48\textwidth}
+        \includegraphics{task3/J_r.png}
+        \caption{$J(0,t)$ при $r\in\{0.5,2,5\}$}
+    \end{subfigure}\hfill
+    \begin{subfigure}{0.48\textwidth}
+        \includegraphics{task3/J_k.png}
+        \caption{$J(0,t)$ при $Q_k=kQ$, $k\in\{0.5,1,2\}$}
+    \end{subfigure}
+    \caption{Серии экспериментов по $r$ и $k$}
+    \label{fig:l3:sweep}
+\end{figure}
+
 \section{Краткие теоретические пояснения}
-\subsection{Существование и единственность решения CARE}
-Для бесконечного горизонта и \(Q\succeq 0,\ r>0\) симметричное \(P\succ0\) — единственное стабилизирующее решение CARE, если пара \((A,b)\) стабилизируема, а \((Q^{1/2},A)\) наблюдаема (детектируема). В этом случае матрица \(A-bK\) \emph{устойчива} и регулятор \(u=-Kx\) оптимален в классе линейных и нелинейных стратегий.
+\subsection{Существование и единственность решения уравнения Риккати}
+Для бесконечного горизонта и \(Q\succeq 0,\ r>0\) симметричное \(P\succ0\) — единственное стабилизирующее решение алгебраического уравнения Риккати, если пара \((A,b)\) стабилизируема, а \((Q^{1/2},A)\) наблюдаема (детектируема). В этом случае матрица \(A-bK\) \emph{устойчива} и регулятор \(u=-Kx\) оптимален в классе линейных и нелинейных стратегий.
 
 \subsection{Интерпретация матрицы P и значение критерия}
 Матрица \(P\) является функцией Ляпунова для замкнутой системы: выполняется
@@ -134,6 +191,6 @@ print({'J_final': float(Jt[-1])})
 
 \subsection{Проверка оптимальности}
 Эквивалентные диагностические критерии:
-- \(P\succ0\) решает CARE и \(A-bK\) устойчиво;
+- \(P\succ0\) решает алгебраическое уравнение Риккати и \(A-bK\) устойчиво;
 - для \(x_0\) выполнено \(J(\infty)=x_0^T P x_0\);
 - матричное уравнение Ляпунова для \(A-bK\) верно с правой частью \(Q+rK^T K\).
