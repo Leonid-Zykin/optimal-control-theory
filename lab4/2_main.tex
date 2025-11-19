@@ -23,67 +23,67 @@ A^T P + P A - P b r^{-1} b^T P + Q = 0,\qquad K=r^{-1} b^T P.
 \]
 При стабилизируемости \((A,b)\) и детектируемости \((Q^{1/2},A)\) существует единственное стабилизирующее \(P\succ0\), и \(J(\infty)=V(x_0)=x_0^T P x_0\).
 
-\subsection{Численная реализация}
-\begin{lstlisting}[caption={Bellman/LQR (вариант 13): CARE, интеграл стоимости и графики},label={lst:bellman13}]
-# lab4/python/bellman_var13.py
-import numpy as np
-from scipy.linalg import solve_continuous_are
-from scipy.integrate import solve_ivp
-import matplotlib.pyplot as plt
+% \subsection{Численная реализация}
+% \begin{lstlisting}[caption={Bellman/LQR (вариант 13): CARE, интеграл стоимости и графики},label={lst:bellman13}]
+% # lab4/python/bellman_var13.py
+% import numpy as np
+% from scipy.linalg import solve_continuous_are
+% from scipy.integrate import solve_ivp
+% import matplotlib.pyplot as plt
 
-A = np.array([[0.0, 1.0],[4.0, 3.0]])
-b = np.array([[2.0],[6.0]])
-Q = np.array([[6.0, 0.0],[0.0, 3.0]])
-r = 2.0
+% A = np.array([[0.0, 1.0],[4.0, 3.0]])
+% b = np.array([[2.0],[6.0]])
+% Q = np.array([[6.0, 0.0],[0.0, 3.0]])
+% r = 2.0
 
-P = solve_continuous_are(A, b, Q, r)
-K = (1.0/r) * (b.T @ P)
-Acl = A - b @ K
+% P = solve_continuous_are(A, b, Q, r)
+% K = (1.0/r) * (b.T @ P)
+% Acl = A - b @ K
 
-x0 = np.array([1.0, 0.0])
-T = (0.0, 10.0)
+% x0 = np.array([1.0, 0.0])
+% T = (0.0, 10.0)
 
-def cost(x, u):
-    return float(x.T @ Q @ x + r * u**2)
+% def cost(x, u):
+%     return float(x.T @ Q @ x + r * u**2)
 
-def odefun(t, z):
-    x = z[:2]
-    u = -float(K @ x)
-    jdot = cost(x, u)
-    dx = Acl @ x
-    return np.hstack([dx, jdot])
+% def odefun(t, z):
+%     x = z[:2]
+%     u = -float(K @ x)
+%     jdot = cost(x, u)
+%     dx = Acl @ x
+%     return np.hstack([dx, jdot])
 
-z0 = np.hstack([x0, 0.0])
-sol = solve_ivp(odefun, T, z0, max_step=0.01, rtol=1e-8, atol=1e-10)
+% z0 = np.hstack([x0, 0.0])
+% sol = solve_ivp(odefun, T, z0, max_step=0.01, rtol=1e-8, atol=1e-10)
 
-t = sol.t
-x = sol.y[:2,:]
-Jt = sol.y[2,:]
-u = -(K @ x).ravel()
+% t = sol.t
+% x = sol.y[:2,:]
+% Jt = sol.y[2,:]
+% u = -(K @ x).ravel()
 
-import os
-os.makedirs('/home/leonidas/projects/itmo/optimal-control-theory/lab4/images/task4', exist_ok=True)
+% import os
+% os.makedirs('/home/leonidas/projects/itmo/optimal-control-theory/lab4/images/task4', exist_ok=True)
 
-plt.figure(figsize=(6,4))
-plt.plot(t, x[0], label='x1'); plt.plot(t, x[1], label='x2')
-plt.xlabel('t'); plt.ylabel('states'); plt.grid(True, alpha=0.3)
-plt.legend(); plt.tight_layout()
-plt.savefig('/home/leonidas/projects/itmo/optimal-control-theory/lab4/images/task4/states.png', dpi=200)
+% plt.figure(figsize=(6,4))
+% plt.plot(t, x[0], label='x1'); plt.plot(t, x[1], label='x2')
+% plt.xlabel('t'); plt.ylabel('states'); plt.grid(True, alpha=0.3)
+% plt.legend(); plt.tight_layout()
+% plt.savefig('/home/leonidas/projects/itmo/optimal-control-theory/lab4/images/task4/states.png', dpi=200)
 
-plt.figure(figsize=(6,4))
-plt.plot(t, u)
-plt.xlabel('t'); plt.ylabel('u'); plt.grid(True, alpha=0.3)
-plt.tight_layout()
-plt.savefig('/home/leonidas/projects/itmo/optimal-control-theory/lab4/images/task4/u.png', dpi=200)
+% plt.figure(figsize=(6,4))
+% plt.plot(t, u)
+% plt.xlabel('t'); plt.ylabel('u'); plt.grid(True, alpha=0.3)
+% plt.tight_layout()
+% plt.savefig('/home/leonidas/projects/itmo/optimal-control-theory/lab4/images/task4/u.png', dpi=200)
 
-plt.figure(figsize=(6,4))
-plt.plot(t, Jt)
-plt.xlabel('t'); plt.ylabel('J(0,t)'); plt.grid(True, alpha=0.3)
-plt.tight_layout()
-plt.savefig('/home/leonidas/projects/itmo/optimal-control-theory/lab4/images/task4/J.png', dpi=200)
+% plt.figure(figsize=(6,4))
+% plt.plot(t, Jt)
+% plt.xlabel('t'); plt.ylabel('J(0,t)'); plt.grid(True, alpha=0.3)
+% plt.tight_layout()
+% plt.savefig('/home/leonidas/projects/itmo/optimal-control-theory/lab4/images/task4/J.png', dpi=200)
 
-print({'K': K.tolist(), 'J_final': float(Jt[-1]), 'x0TPx0': float(x0 @ (P @ x0))})
-\end{lstlisting}
+% print({'K': K.tolist(), 'J_final': float(Jt[-1]), 'x0TPx0': float(x0 @ (P @ x0))})
+% \end{lstlisting}
 
 \begin{figure}[H]
     \centering
@@ -106,3 +106,27 @@ print({'K': K.tolist(), 'J_final': float(Jt[-1]), 'x0TPx0': float(x0 @ (P @ x0))
 \end{figure}
 
 Получено: \(K\approx[1.1345\;1.8229]\). Инвариантная формула даёт \(J(\infty)=x_0^T P x_0\approx 2.4192\), что совпадает с интегральной оценкой по траектории.
+
+\section{Отклонение коэффициентов регулятора}
+Чтобы оценить устойчивость решения по критерию, умножим оба коэффициента оптимального \(K\) на \(0.8\) и \(1.2\). Итоговые значения приведены в таблице.
+\begin{table}[H]
+\centering
+\begin{tabular}{lccc}
+\toprule
+Случай & \(k_1\) & \(k_2\) & \(J(\infty)=J(0,t\to\infty)\) \\
+\midrule
+Оптимальное \(K\) & 1.134 & 1.823 & 2.4192 \\
+Уменьшено на \(20\%\) & 0.908 & 1.458 & 2.4364 \\
+Увеличено на \(20\%\) & 1.361 & 2.187 & 2.4267 \\
+\bottomrule
+\end{tabular}
+\caption{Изменение стоимости при небольшом отклонении \(K\)}
+\end{table}
+Во всех трёх случаях собственные значения замкнутой матрицы \(A-bK\) остаются в левой полуплоскости (\(-6.36\ldots-11.69\)), следовательно, устойчивость сохраняется. Отклонение на \(20\%\) даёт лишь \(0.3\dots0.7\%\) роста \(J(\infty)\), то есть критерий ухудшается совсем незначительно: регулятор демонстрирует хорошую робастность, что видно по кривым накопленного интеграла (рис.~\ref{fig:J_compare_pertK}).
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.65\textwidth]{task4/J_compare_pertK.png}
+    \caption{Критерий \(J(0,t)\) при оптимальном и отклонённых значениях \(K\)}
+    \label{fig:J_compare_pertK}
+\end{figure}
