@@ -38,17 +38,54 @@ def simulate_observer(
     u_fun: Callable[[float], float],
     use_estimate_feedback: bool = False,
     K_gain: np.ndarray | None = None,
+    W_noise: np.ndarray | None = None,
+    V_noise: float | None = None,
+    seed: int | None = None,
 ) -> Dict[str, np.ndarray]:
+    if W_noise is None:
+        W_noise = W_nom
+    if V_noise is None:
+        V_noise = V_nom
+    
+    # Генерация шумов для всего интервала времени
+    if seed is not None:
+        np.random.seed(seed)
+    
+    # Разложение Холецкого для генерации коррелированного шума
+    L_w = np.linalg.cholesky(W_noise)
+    dt_noise = 0.01  # шаг для генерации шума (совпадает с max_step)
+    t_noise = np.arange(T_span[0], T_span[1] + dt_noise, dt_noise)
+    n_steps = len(t_noise)
+    
+    # Генерация белого шума процесса (w) и измерений (v)
+    # Для непрерывного белого шума: w(t) имеет интенсивность W, масштабируем на sqrt(dt)
+    w_white = np.random.randn(n_steps, 2) @ L_w.T  # коррелированный шум процесса
+    v_white = np.random.randn(n_steps) * np.sqrt(V_noise)  # шум измерений
+    
     def rhs(t, z):
         x = z[:2]
         xh = z[2:4]
-        y = C @ x
+        
+        # Интерполяция шумов для текущего времени (ближайший сосед)
+        idx = int((t - T_span[0]) / dt_noise)
+        idx = min(max(idx, 0), n_steps - 1)
+        
+        # Масштабирование для белого шума в непрерывной модели
+        w_t = w_white[idx] / np.sqrt(dt_noise)
+        v_t = v_white[idx] / np.sqrt(dt_noise)
+        
+        # Измерение с шумом
+        y = (C @ x).item() + v_t
+        
         if use_estimate_feedback and K_gain is not None:
             u_val = -float((K_gain @ xh).item())
         else:
             u_val = float(u_fun(t))
-        dx = A @ x + (b.flatten() * u_val)
-        dxh = A @ xh + (b.flatten() * u_val) + (L_gain @ (y - C @ xh)).flatten()
+        
+        # Динамика с шумом процесса
+        dx = A @ x + (b.flatten() * u_val) + (G @ w_t)
+        innovation = y - (C @ xh).item()
+        dxh = A @ xh + (b.flatten() * u_val) + (L_gain.flatten() * innovation)
         e = x - xh
         jdot = float(e @ e)
         return np.hstack([dx, dxh, jdot])
@@ -117,7 +154,7 @@ results = {}
 
 # 1. Номинальный наблюдатель
 L_nom = observer_gain(W_nom, V_nom)
-results["nominal"] = simulate_observer(L_nom, "L_nom", lambda t: np.sin(t))
+results["nominal"] = simulate_observer(L_nom, "L_nom", lambda t: np.sin(t), W_noise=W_nom, V_noise=V_nom, seed=42)
 plot_errors(results["nominal"], "error_nominal.png", "Ошибки наблюдателя (номинальные W,V)")
 plot_integral(results["nominal"], "J_nominal.png", "Интеграл ошибки (номинал)")
 plt.figure(figsize=(6, 4))
@@ -132,7 +169,7 @@ plt.savefig(os.path.join(output_dir, "u_input.png"), dpi=200)
 # 3. Незначительное отклонение L
 scale_vec = np.array([[1.15], [0.85]])
 L_pert = L_nom * scale_vec
-results["L_pert"] = simulate_observer(L_pert, "L_pert", lambda t: np.sin(t))
+results["L_pert"] = simulate_observer(L_pert, "L_pert", lambda t: np.sin(t), W_noise=W_nom, V_noise=V_nom, seed=42)
 plt.figure(figsize=(6, 4))
 for key, label in [("nominal", "номинал"), ("L_pert", "L ( +15% / -15%)")]:
     res = results[key]
@@ -159,16 +196,62 @@ plt.savefig(os.path.join(output_dir, "J_compare_L.png"), dpi=200)
 # 4. Изменение W (симметричная матрица >0)
 W_mod = np.array([[8.5, 3.8], [3.8, 5.5]])
 L_W = observer_gain(W_mod, V_nom)
-results["W_mod"] = simulate_observer(L_W, "W_mod", lambda t: np.sin(t))
+results["W_mod"] = simulate_observer(L_W, "W_mod", lambda t: np.sin(t), W_noise=W_mod, V_noise=V_nom, seed=42)
 plot_errors(results["W_mod"], "error_W.png", "Ошибки при усиленном шуме процесса W")
 plot_integral(results["W_mod"], "J_W.png", "J(0,t) при изменённых W")
+# График сравнения для W
+plt.figure(figsize=(6, 4))
+for key, label in [("nominal", "номинал"), ("W_mod", "W изменён")]:
+    res = results[key]
+    plt.plot(res["t"], np.linalg.norm(res["Eh"], axis=0), label=label)
+plt.xlabel("t")
+plt.ylabel("\\|e_h\\|")
+plt.grid(True, alpha=0.3)
+plt.legend()
+plt.tight_layout()
+plt.title("Сравнение нормы ошибки: изменение W")
+plt.savefig(os.path.join(output_dir, "error_norm_W.png"), dpi=200)
+plt.figure(figsize=(6, 4))
+for key, label in [("nominal", "номинал"), ("W_mod", "W изменён")]:
+    res = results[key]
+    plt.plot(res["t"], res["J"], label=label)
+plt.xlabel("t")
+plt.ylabel("J(0,t)")
+plt.grid(True, alpha=0.3)
+plt.legend()
+plt.tight_layout()
+plt.title("Сравнение интеграла ошибки: изменение W")
+plt.savefig(os.path.join(output_dir, "J_compare_W.png"), dpi=200)
 
 # 5. Изменение V
 V_mod = 3.0
 L_V = observer_gain(W_nom, V_mod)
-results["V_mod"] = simulate_observer(L_V, "V_mod", lambda t: np.sin(t))
+results["V_mod"] = simulate_observer(L_V, "V_mod", lambda t: np.sin(t), W_noise=W_nom, V_noise=V_mod, seed=42)
 plot_errors(results["V_mod"], "error_V.png", "Ошибки при увеличенном шуме измерений V")
 plot_integral(results["V_mod"], "J_V.png", "J(0,t) при изменённом V")
+# График сравнения для V
+plt.figure(figsize=(6, 4))
+for key, label in [("nominal", "номинал"), ("V_mod", "V изменён")]:
+    res = results[key]
+    plt.plot(res["t"], np.linalg.norm(res["Eh"], axis=0), label=label)
+plt.xlabel("t")
+plt.ylabel("\\|e_h\\|")
+plt.grid(True, alpha=0.3)
+plt.legend()
+plt.tight_layout()
+plt.title("Сравнение нормы ошибки: изменение V")
+plt.savefig(os.path.join(output_dir, "error_norm_V.png"), dpi=200)
+plt.figure(figsize=(6, 4))
+for key, label in [("nominal", "номинал"), ("V_mod", "V изменён")]:
+    res = results[key]
+    plt.plot(res["t"], res["J"], label=label)
+plt.xlabel("t")
+plt.ylabel("J(0,t)")
+plt.grid(True, alpha=0.3)
+plt.legend()
+plt.tight_layout()
+plt.title("Сравнение интеграла ошибки: изменение V")
+plt.savefig(os.path.join(output_dir, "J_compare_V.png"), dpi=200)
 
 # 6. ЛКГ: регулятор + фильтр Калмана
 Q_reg = np.diag([6.0, 3.0])
@@ -180,6 +263,9 @@ results["lqg"] = simulate_observer(
     lambda t: 0.0,
     use_estimate_feedback=True,
     K_gain=K_lqr,
+    W_noise=W_nom,
+    V_noise=V_nom,
+    seed=42,
 )
 plt.figure(figsize=(6, 4))
 res = results["lqg"]
