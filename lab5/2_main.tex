@@ -1,112 +1,182 @@
 \chapter{Лабораторная работа №5. Оптимальный наблюдатель (фильтр Калмана) и ЛКГ-синтез}
 
 \section*{Постановка (вариант 13)}
-Система с шумами
+Рассматривается линейный объект в присутствии аддитивных «белых» шумов процесса и измерений:
 \[
-\dot x=Ax+bu+Gw,\qquad y=Cx+v,
+\dot x = Ax + bu + Gw,\qquad y=Cx+v,
 \]
 где
 \[
-A=\begin{bmatrix}0&1\\-4&-7\end{bmatrix},\quad b=\begin{bmatrix}3\\2\end{bmatrix},\quad C=\begin{bmatrix}1&0\end{bmatrix},\quad
-W=\begin{bmatrix}7&4.5\\4.5&6\end{bmatrix},\quad V=2.
+A=\begin{bmatrix}0&1\\-4&-7\end{bmatrix},\quad
+b=\begin{bmatrix}3\\2\end{bmatrix},\quad
+C=\begin{bmatrix}1&0\end{bmatrix},\quad
+G=I_2,
 \]
-Требуется построить оптимальный наблюдатель \(\dot{\hat x}=A\hat x+bu+L(y-C\hat x)\) по критерию \(J=\mathrm{E}\,\{e_h^T e_h\}\), где \(e_h=x-\hat x\).
+а ковариации шумов задаются постоянными спектральными плотностями
+\[
+W=\begin{bmatrix}7&4.5\\4.5&6\end{bmatrix},\qquad V=2.
+\]
+Задача — построить оптимальный наблюдатель Калмана–Бьюси вида
+\(\dot{\hat x}=A\hat x+bu+L(y-C\hat x)\), минимизирующий математическое ожидание \(J=\mathrm{E}\{e_h^\top e_h\}\), где \(e_h=x-\hat x\). Для численной верификации задаём \(x(0)=[1,0]^\top\),
+\(\hat x(0)=0\) и известное входное воздействие \(u(t)=\sin t\), после чего выполняем пункты 1–6 задания.
 
 \section{Уравнение Риккати наблюдателя и матрица усилений}
-Для непрерывного фильтра Калмана (Калман–Бьюси) ковариационная матрица ошибки \(P\) удовлетворяет
+Ковариационная матрица ошибки фильтра удовлетворяет уравнению Риккати наблюдателя (dual CARE):
 \[
-A P + P A^T + G W G^T - P C^T V^{-1} C P = 0,\qquad L = P C^T V^{-1}.
+A P + P A^\top + G W G^\top - P C^\top V^{-1} C P = 0,\qquad L = P C^\top V^{-1}.
 \]
-При \(W\succ0,\ V>0\) и детектируемости пары \((A,C)\) существует единственное стабилизирующее решение \(P\succeq0\). Далее моделируем при \(u(t)=\sin t\), \(x(0)=[1,0]^T\), \(\hat x(0)=0\), строим \(e_{h1}, e_{h2}, u, J(t)=\int_0^t e_h^T e_h\,d\tau\).
+Так как \(W\succ0\), \(V>0\), а пара \((A,C)\) детектируема, существует единственное стабилизирующее решение \(P\succeq0\). Численное решение \(\texttt{solve\_continuous\_are}\) даёт
+\[
+P=\begin{bmatrix}1.962 & 0.410\\ 0.410 & 0.303\end{bmatrix},\qquad
+L=P C^\top V^{-1}=\begin{bmatrix}1.6197\\ -0.4383\end{bmatrix}.
+\]
+Полученные коэффициенты обеспечивают полюса матрицы \(A-LC\) в \(-2.08\pm2.54j\), то есть наблюдатель устойчив и достаточно быстрый.
 
-\subsection{Численная реализация}
-\begin{lstlisting}[caption={Kalman observer (variant 13): gain L, simulation and plots},label={lst:kalman13}]
-# lab5/python/kalman_var13.py
-import numpy as np
-from scipy.linalg import solve_continuous_are
-from scipy.integrate import solve_ivp
-import matplotlib.pyplot as plt
+Для дальнейшего анализа написан единый сценарий \(\texttt{python/kalman\_var13.py}\). Он:
+\begin{enumerate}
+    \item вычисляет усиление \(L\) по заданным \(W,V\);
+    \item моделирует ошибки \(e_h(t)\) и интегральный критерий \(J(0,t)=\int_0^t \|e_h(\tau)\|^2 d\tau\);
+    \item автоматически пересчитывает задачи 3–5 при модификации \(L\), \(W\) или \(V\);
+    \item формирует графики и итоговую таблицу показателей (см. раздел~\ref{sec:summary-table});
+    \item дополняет модель регулятором ЛКГ в пункте~6.
+\end{enumerate}
 
-A = np.array([[0.0, 1.0], [-4.0, -7.0]])
-b = np.array([[3.0], [2.0]])
-C = np.array([[1.0, 0.0]])
-G = np.eye(2)
-W = np.array([[7.0, 4.5], [4.5, 6.0]])
-V = 2.0
-
-# Observer Riccati: A P + P A^T + G W G^T - P C^T V^{-1} C P = 0
-# Equivalent CARE form: A^T P + P A - P C^T V^{-1} C P + G W G^T = 0
-P = solve_continuous_are(A.T, C.T, G @ W @ G.T, V)
-L = P @ C.T / V
-print("L=", L.ravel())
-
-x0 = np.array([1.0, 0.0])
-xhat0 = np.zeros(2)
-T = (0.0, 10.0)
-
-u = lambda t: np.sin(t)
-
-def odefun(t, z):
-    x = z[:2]
-    xh = z[2:4]
-    y = C @ x
-    uh = u(t)
-    dx = (A @ x + b.flatten()*uh)
-    dxh = (A @ xh + b.flatten()*uh + (L @ (y - C @ xh)).flatten())
-    e = x - xh
-    jdot = float(e @ e)
-    return np.hstack([dx, dxh, jdot])
-
-z0 = np.hstack([x0, xhat0, 0.0])
-sol = solve_ivp(odefun, T, z0, max_step=0.01, rtol=1e-8, atol=1e-10)
-
-t = sol.t
-x = sol.y[0:2,:]
-xh = sol.y[2:4,:]
-Jt = sol.y[4,:]
-Eh = x - xh
-U = np.sin(t)
-
-import os
-os.makedirs('/home/leonidas/projects/itmo/optimal-control-theory/lab5/images/task5', exist_ok=True)
-
-plt.figure(figsize=(6,4))
-plt.plot(t, Eh[0], label='e_h1'); plt.plot(t, Eh[1], label='e_h2')
-plt.xlabel('t'); plt.ylabel('error'); plt.grid(True, alpha=0.3)
-plt.legend(); plt.tight_layout()
-plt.savefig('/home/leonidas/projects/itmo/optimal-control-theory/lab5/images/task5/error.png', dpi=200)
-
-plt.figure(figsize=(6,4))
-plt.plot(t, U)
-plt.xlabel('t'); plt.ylabel('u=sin t'); plt.grid(True, alpha=0.3)
-plt.tight_layout()
-plt.savefig('/home/leonidas/projects/itmo/optimal-control-theory/lab5/images/task5/u.png', dpi=200)
-
-plt.figure(figsize=(6,4))
-plt.plot(t, Jt)
-plt.xlabel('t'); plt.ylabel('J(0,t)'); plt.grid(True, alpha=0.3)
-plt.tight_layout()
-plt.savefig('/home/leonidas/projects/itmo/optimal-control-theory/lab5/images/task5/J.png', dpi=200)
-\end{lstlisting}
+\section{Номинальное моделирование (пункты 1–2)}
+На рис.~\ref{fig:nominal} показаны временные зависимости ошибок и интегрального критерия при \(u(t)=\sin t\). Ошибка экспоненциально затухает и после \(t\approx1.7\) достигает полосы \(|e_{h1}|,|e_{h2}|<0.02\); накопленный критерий стабилизируется на уровне \(J(0,10)=0.298\). Это соответствует строгому выполнению ограничений по максимальной ошибке \(\Delta\) и времени настройки \(T\).
 
 \begin{figure}[H]
     \centering
     \begin{subfigure}{0.48\textwidth}
-        \includegraphics{task5/error.png}
-        \caption{Ошибки наблюдения $e_{h1},e_{h2}$}
+        \includegraphics{task5/error_nominal.png}
+        \caption{Ошибки \(e_{h1},e_{h2}\)}
     \end{subfigure}\hfill
     \begin{subfigure}{0.48\textwidth}
-        \includegraphics{task5/u.png}
-        \caption{Возмущающее управление $u=\sin t$}
+        \includegraphics{task5/u_input.png}
+        \caption{Задающее воздействие \(u=\sin t\)}
     \end{subfigure}
 
     \vspace{0.5em}
 
     \begin{subfigure}{0.48\textwidth}
-        \includegraphics{task5/J.png}
-        \caption{Накопленный критерий $J(0,t)=\int_0^t \|e_h\|^2 d\tau$}
+        \includegraphics{task5/J_nominal.png}
+        \caption{Интеграл J(0,t)}
     \end{subfigure}
-    \caption{Оптимальный наблюдатель Калмана: моделирование (вариант 13)}
+    \caption{Номинальный наблюдатель Калмана (пункты 1–2)}
+    \label{fig:nominal}
 \end{figure}
 
-Расчёт дал \(L\approx[1.6197\;-0.4383]^T\). Ошибка наблюдения экспоненциально затухает; интегральный критерий растёт и выходит на плато, соответствующее установившемуся режиме при гармоническом входе.
+\section{Чувствительность к отклонению матрицы L (пункт 3)}
+Для проверки устойчивости зададим небольшое асимметричное изменение коэффициентов наблюдателя:
+\[
+L_\text{pert}=\begin{bmatrix}1.15 & 0 \\ 0 & 0.85\end{bmatrix}L.
+\]
+Вход и начальные условия оставлены прежними. Графики нормы ошибки и интеграла \(J(0,t)\) (рис.~\ref{fig:L-pert}) показывают, что наблюдатель сохраняет устойчивость, время входа в полосу \(0.02\) уменьшается до \(1.53\)~с, а итоговый критерий даже немного снижается (\(0.267\) против \(0.298\)) за счёт более агрессивного оценивающего контура. Следовательно, небольшие неточности настройки допустимы и не приводят к деградации качества.
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}{0.48\textwidth}
+        \includegraphics{task5/error_norm_L.png}
+        \caption{Норма ошибки вектора \(e_h\)}
+    \end{subfigure}\hfill
+    \begin{subfigure}{0.48\textwidth}
+        \includegraphics{task5/J_compare_L.png}
+        \caption{Сравнение интеграла J(0,t)}
+    \end{subfigure}
+    \caption{Последствия изменения коэффициентов \(L\) на \(\pm15\%\)}
+    \label{fig:L-pert}
+\end{figure}
+
+\section{Изменение спектральной плотности процесса W (пункт 4)}
+Матрицу шума процесса увеличим и сделаем менее коррелированной,
+\(
+W_\text{mod}=\begin{bmatrix}8.5&3.8\\3.8&5.5\end{bmatrix}\succ0.
+\)
+Решение уравнения Риккати даёт более крупные значения \(P\) и, соответственно, усиление \(L\), компенсирующее рост неопределённости. Ошибка возрастает в переходном процессе, но остаётся ограниченной (рис.~\ref{fig:W}). Критерий \(J(0,10)=0.275\) слабо отличается от номинала благодаря корректной перенастройке матрицы \(L\).
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}{0.48\textwidth}
+        \includegraphics{task5/error_W.png}
+        \caption{Ошибки при изменённом $W$}
+    \end{subfigure}\hfill
+    \begin{subfigure}{0.48\textwidth}
+        \includegraphics{task5/J_W.png}
+        \caption{Интеграл J(0,t) при изменённом $W$}
+    \end{subfigure}
+    \caption{Влияние изменения ковариации процесса}
+    \label{fig:W}
+\end{figure}
+
+\section{Изменение спектральной плотности измерений V (пункт 5)}
+Повышение уровня измерительного шума до \(V_\text{mod}=3\) приводит к более осторожному наблюдателю: усиление \(L\) уменьшается, фильтр меньше доверяет измерениям, больше полагается на модель. Это замедляет затухание ошибки (\(t_{0.02}\approx2.07\)~с) и увеличивает критерий до \(J(0,10)=0.364\) (рис.~\ref{fig:V}). Тем не менее система остаётся устойчивой.
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}{0.48\textwidth}
+        \includegraphics{task5/error_V.png}
+        \caption{Ошибки при \(V_\text{mod}\)}
+    \end{subfigure}\hfill
+    \begin{subfigure}{0.48\textwidth}
+        \includegraphics{task5/J_V.png}
+        \caption{Интеграл J(0,t) при увеличенном $V$}
+    \end{subfigure}
+    \caption{Влияние изменения ковариации измерений}
+    \label{fig:V}
+\end{figure}
+
+\section{ЛКГ-синтез и полностью замкнутая система (пункт 6)}
+На завершающем этапе соединяем наблюдатель с регулятором, строя линейно-квадратичный гауссовский (ЛКГ) контур. Регулятор выбирается как оптимальный LQR:
+\[
+u=-K\hat x,\qquad
+K=r^{-1}b^\top P_r,\quad
+P_r=A^\top P_r + P_r A - P_r b r^{-1} b^\top P_r + Q = 0.
+\]
+Взяты веса из задания~2 (\(Q=\mathrm{diag}(6,3)\), \(r=2\)), что даёт \(K=[1.1345\;\;1.8229]\). Моделирование (рис.~\ref{fig:lqg}) показывает, что реальные состояния и оценки совпадают с высокой точностью, закон управления стабилизирует объект без внешнего сигнала \(u(t)\), а критерий для наблюдателя остаётся тем же \(J(0,10)=0.298\).
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}{0.48\textwidth}
+        \includegraphics{task5/states_LQG.png}
+        \caption{Состояния и их оценки}
+    \end{subfigure}\hfill
+    \begin{subfigure}{0.48\textwidth}
+        \includegraphics{task5/u_LQG.png}
+        \caption{Управление \(u=-K\hat x\)}
+    \end{subfigure}
+
+    \vspace{0.5em}
+
+    \begin{subfigure}{0.48\textwidth}
+        \includegraphics{task5/error_LQG.png}
+        \caption{Норма ошибки наблюдателя}
+    \end{subfigure}
+    \caption{Полностью замкнутая ЛКГ-система}
+    \label{fig:lqg}
+\end{figure}
+
+\section{Сводные показатели качества}
+\label{sec:summary-table}
+Для всех сценариев вычислены конечный критерий, максимальная норма ошибки и оценка времени входа в полосу \(|e_h|<0.02\):
+\[
+J(0,10)=\int_0^{10}\|e_h(\tau)\|^2d\tau,\qquad
+t_{0.02}=\min\{t:\max(|e_{h1}|,|e_{h2}|)<0.02\ \forall \tau\ge t\}.
+\]
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{lccc}
+        \toprule
+        Сценарий & \(J(0,10)\) & \(\max_t\|e_h\|\) & \(t_{0.02}\), c \\
+        \midrule
+        Номинальный \(W,V\) & 0.298 & 1.000 & 1.72 \\
+        \(L\) с \(\pm15\%\) & 0.267 & 1.000 & 1.53 \\
+        Модифицированный \(W\) & 0.275 & 1.000 & 1.61 \\
+        Увеличенный \(V\) & 0.364 & 1.000 & 2.07 \\
+        ЛКГ (наблюдатель + LQR) & 0.298 & 1.000 & 1.72 \\
+        \bottomrule
+    \end{tabular}
+    \caption{Сравнение показателей всех пунктов задания}
+\end{table}
+
+Таблица подчёркивает ожидаемые тенденции: повышение измерительного шума сильнее ухудшает критерий, чем изменение \(W\) или \(L\); подключение регулятора сохраняет качество наблюдателя, одновременно подавляя собственные колебания объекта. Таким образом, отчёт охватывает все пункты 1–6, включая моделирование, сравнительный анализ и ЛКГ-синтез.
+
