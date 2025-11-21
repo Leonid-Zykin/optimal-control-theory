@@ -23,7 +23,16 @@ A^T P + P A + Q - P B B^T P + \frac{1}{\gamma^2} P B_f B_f^T P = 0,\qquad K=-B^T
 \[
 A^T P_{k+1}+P_{k+1}A - P_{k+1} B B^T P_{k+1} + (Q + \tfrac{1}{\gamma^2} P_k B_f B_f^T P_k)=0
 \]
-с начальным $P_0$ из LQR (решение CARE с $Q$ и $R=I$). Затем по бисекции подбираем $\gamma$ так, чтобы матрица $A-BK$ была устойчивой и $P\succeq0$. Далее строим графики $x_1,x_2,u$ и оцениваем $\|G(j\omega)\|_{\infty}$ на частотной сетке.
+с начальным $P_0$ из LQR (решение CARE с $Q$ и $R=I$). Затем по адаптивному поиску подбираем $\gamma$ так, чтобы матрица $A+BK$ была устойчивой и $P\succeq0$. Для найденного $\gamma_{\min}$ моделируем $x_1,x_2,u$ и вычисляем частотные зависимости трёх каналов:
+\[
+G_1(j\omega)=C_1(j\omega I-A_{cl})^{-1}B_f,\quad
+G_2(j\omega)=C_2(j\omega I-A_{cl})^{-1}B_f,
+\]
+\[
+G_f(j\omega)=(j\omega I-A_{cl})^{-1}B_f,\quad
+G_u(j\omega)=(j\omega I-A_{cl})^{-1}B,
+\]
+где $C_1=[1\;0]$, $C_2=[0\;1]$. Максимумы $G_1,G_2$ дают нормы по компонентам, $G_f$ соответствует требуемой в п.~6 совокупной реакции на возмущение, $G_u$ — на управляющий вход.
 
 \begin{lstlisting}[caption={H∞-synthesis (variant 13): γ_min search, modeling and spectral estimates},label={lst:hinf13}]
 # lab6/python/hinf_var13.py
@@ -141,10 +150,29 @@ plt.savefig('/home/leonidas/projects/itmo/optimal-control-theory/lab6/images/tas
 
     \begin{subfigure}{0.6\textwidth}
         \includegraphics{task6/hinf_gains.png}
-        \caption{Оценка $H_{\infty}$-норм передаточных функций}
+        \caption{Оценка $H_{\infty}$-норм трёх каналов $G_1,G_2,G_u$}
     \end{subfigure}
     \caption{$H_{\infty}$-синтез (вариант 13): моделирование и частотные оценки}
 \end{figure}
+
+\section{Частотные нормы}
+Максимумы модулей $G_1,G_2,G_u$ получены на сетке $\omega\in[10^{-2},10^{2}]$ и сведены в табл.~\ref{tab:hinf-norms}. Для всех трёх каналов пики приходятся на низкую частоту $\omega=10^{-2}\,\text{рад/с}$: при больших $\omega$ резольвент затухает как $1/\omega$, поэтому усиление падает.
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{lcc}
+        \toprule
+        Канал & $\|G\|_{\infty}$ & $\omega_{\max}$, рад/с \\
+        \midrule
+        $C_1(j\omega I-A_{cl})^{-1}B_f$ & $1.682$ & $1.0\times10^{-2}$ \\
+        $C_2(j\omega I-A_{cl})^{-1}B_f$ & $1.576$ & $1.0\times10^{-2}$ \\
+        $(j\omega I-A_{cl})^{-1}B_f$    & $2.304$ & $1.0\times10^{-2}$ \\
+        $(j\omega I-A_{cl})^{-1}B$      & $3.78\cdot10^{-4}$ & $1.0\times10^{-2}$ \\
+        \bottomrule
+    \end{tabular}
+    \caption{$H_{\infty}$-нормы передаточных функций, требуемых пунктами 5–6}
+    \label{tab:hinf-norms}
+\end{table}
 
 \section{Результаты}
 Численное решение даёт следующие результаты:
@@ -152,5 +180,6 @@ plt.savefig('/home/leonidas/projects/itmo/optimal-control-theory/lab6/images/tas
 \item Минимальное значение параметра: $\gamma_{\min} = 0.1$
 \item Матрица усиления: $K = \begin{bmatrix} 10412.53 & -11113.65 \end{bmatrix}$
 \item Собственные значения замкнутой системы: $\lambda_{1,2} = -0.576, -45856.3$
+\item $H_{\infty}$-нормы каналов: $\|G_1\|_{\infty}=1.682$, $\|G_2\|_{\infty}=1.576$, $\|G_f\|_{\infty}=2.304$, $\|G_u\|_{\infty}=3.78\cdot10^{-4}$
 \end{itemize}
 Замкнутая система устойчива (все собственные значения отрицательны), что подтверждает корректность синтеза $H_{\infty}$-регулятора.

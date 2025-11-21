@@ -1,8 +1,10 @@
-import numpy as np
-from scipy.linalg import solve_continuous_are, eigvals
-from scipy.integrate import solve_ivp
-import matplotlib.pyplot as plt
 import os
+from typing import Dict
+
+import matplotlib.pyplot as plt
+import numpy as np
+from scipy.integrate import solve_ivp
+from scipy.linalg import eigvals, solve_continuous_are
 
 A = np.array([[0.0, 1.0], [4.0, 0.0]])
 B = np.array([[2.0], [6.0]])
@@ -90,20 +92,40 @@ plt.xlabel("t"); plt.ylabel("u"); plt.grid(True, alpha=0.3)
 plt.tight_layout()
 plt.savefig("/home/leonidas/projects/itmo/optimal-control-theory/lab6/images/task6/u.png", dpi=200)
 
-om = np.logspace(-2, 2, 200)  # Reduce frequency points for speed
+om = np.logspace(-2, 2, 400)
 C1 = np.array([[1.0, 0.0]])
 C2 = np.array([[0.0, 1.0]])
 
-sig1, sig2 = [], []
+sig1, sig2, sig_full, sigu = [], [], [], []
 for w in om:
     sI = 1j * w * np.eye(2)
-    G = np.linalg.inv(sI - Acl) @ Bf
-    sig1.append(np.linalg.norm(C1 @ G, 2))
-    sig2.append(np.linalg.norm(C2 @ G, 2))
+    s_res = np.linalg.inv(sI - Acl)
+    Gf = s_res @ Bf
+    Gb = s_res @ B
+    sig1.append(float(np.abs((C1 @ Gf).item())))
+    sig2.append(float(np.abs((C2 @ Gf).item())))
+    sig_full.append(float(np.linalg.norm(Gf)))
+    sigu.append(float(np.linalg.norm(Gb)))
+
+sig1 = np.array(sig1)
+sig2 = np.array(sig2)
+sig_full = np.array(sig_full)
+sig_u = np.array(sigu)
 
 plt.figure(figsize=(6, 4))
 plt.loglog(om, sig1, label="||C1(sI-Acl)^{-1}Bf||")
 plt.loglog(om, sig2, label="||C2(sI-Acl)^{-1}Bf||")
+plt.loglog(om, sig_full, label="||(sI-Acl)^{-1}Bf||")
+plt.loglog(om, sig_u, label="||(sI-Acl)^{-1}B||")
 plt.xlabel("ω"); plt.ylabel("gain"); plt.grid(True, which="both", alpha=0.3)
 plt.legend(); plt.tight_layout()
 plt.savefig("/home/leonidas/projects/itmo/optimal-control-theory/lab6/images/task6/hinf_gains.png", dpi=200)
+
+metrics: Dict[str, Dict[str, float]] = {
+    "C1": {"norm": float(sig1.max()), "omega": float(om[np.argmax(sig1)])},
+    "C2": {"norm": float(sig2.max()), "omega": float(om[np.argmax(sig2)])},
+    "FullBf": {"norm": float(sig_full.max()), "omega": float(om[np.argmax(sig_full)])},
+    "B": {"norm": float(sig_u.max()), "omega": float(om[np.argmax(sig_u)])},
+}
+
+print({"hinf_metrics": metrics})
