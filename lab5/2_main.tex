@@ -59,7 +59,7 @@ L=P C^\top V^{-1}=\begin{bmatrix}1.6197\\ -0.4383\end{bmatrix}.
 
     \begin{subfigure}{0.48\textwidth}
         \includegraphics{task5/J_nominal.png}
-        \caption{Интеграл J(0,t)}
+        \caption{Критерий качества \(\|e_h(t)\|^2\)}
     \end{subfigure}
     \caption{Номинальный наблюдатель Калмана (пункты 1–2)}
     \label{fig:nominal}
@@ -78,6 +78,13 @@ L_\text{pert}=\begin{bmatrix}1.15 & 0 \\ 0 & 0.85\end{bmatrix}L.
         \includegraphics{task5/error_norm_L.png}
         \caption{Норма ошибки вектора \(e_h\)}
     \end{subfigure}\hfill
+    \begin{subfigure}{0.48\textwidth}
+        \includegraphics{task5/J_L.png}
+        \caption{Критерий качества \(\|e_h(t)\|^2\)}
+    \end{subfigure}
+
+    \vspace{0.5em}
+
     \begin{subfigure}{0.48\textwidth}
         \includegraphics{task5/J_compare_L.png}
         \caption{Сравнение интеграла J(0,t)}
@@ -101,7 +108,7 @@ W_\text{mod}=\begin{bmatrix}8.5&3.8\\3.8&5.5\end{bmatrix}\succ0.
     \end{subfigure}\hfill
     \begin{subfigure}{0.48\textwidth}
         \includegraphics{task5/J_W.png}
-        \caption{Интеграл J(0,t) при изменённом $W$}
+        \caption{Критерий качества \(\|e_h(t)\|^2\) при изменённом $W$}
     \end{subfigure}
 
     \vspace{0.5em}
@@ -129,7 +136,7 @@ W_\text{mod}=\begin{bmatrix}8.5&3.8\\3.8&5.5\end{bmatrix}\succ0.
     \end{subfigure}\hfill
     \begin{subfigure}{0.48\textwidth}
         \includegraphics{task5/J_V.png}
-        \caption{Интеграл J(0,t) при увеличенном $V$}
+        \caption{Критерий качества \(\|e_h(t)\|^2\) при увеличенном $V$}
     \end{subfigure}
 
     \vspace{0.5em}
@@ -171,6 +178,10 @@ P_r=A^\top P_r + P_r A - P_r b r^{-1} b^\top P_r + Q = 0.
     \begin{subfigure}{0.48\textwidth}
         \includegraphics{task5/error_LQG.png}
         \caption{Норма ошибки наблюдателя}
+    \end{subfigure}\hfill
+    \begin{subfigure}{0.48\textwidth}
+        \includegraphics{task5/J_LQG.png}
+        \caption{Критерий качества \(\|e_h(t)\|^2\)}
     \end{subfigure}
     \caption{Полностью замкнутая ЛКГ-система}
     \label{fig:lqg}

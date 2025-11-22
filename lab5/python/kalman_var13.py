@@ -150,13 +150,82 @@ def plot_integral(res: Dict[str, np.ndarray], fname: str, title: str):
     plt.savefig(os.path.join(output_dir, fname), dpi=200)
 
 
+def compute_error_covariance_trajectory(
+    L_gain: np.ndarray,
+    W_noise: np.ndarray,
+    V_noise: float,
+    t_span: tuple = (0.0, 10.0),
+) -> tuple[np.ndarray, np.ndarray]:
+    """
+    Вычисляет траекторию ковариационной матрицы ошибки P(t) через решение
+    дифференциального уравнения Риккати:
+    dP/dt = A P + P A^T + G W G^T - P C^T V^{-1} C P
+    
+    Возвращает (t, trace_P_t) где trace_P_t = E{||e_h(t)||²}
+    """
+    # Начальное условие: P(0) = E{e_h(0)e_h(0)^T}
+    # При x(0)=[1,0]^T, x̂(0)=[0,0]^T: e_h(0) = [1,0]^T
+    P0 = np.array([[1.0, 0.0], [0.0, 0.0]])
+    
+    def dPdt(t, P_vec):
+        """Правая часть дифференциального уравнения для P(t)"""
+        P = P_vec.reshape(2, 2)
+        # dP/dt = A P + P A^T + G W G^T - P C^T V^{-1} C P
+        # P C^T V^{-1} C P = (1/V) * P C^T C P
+        dP = (A @ P + P @ A.T + 
+              G @ W_noise @ G.T - 
+              (1.0 / V_noise) * (P @ C.T @ C @ P))
+        return dP.flatten()
+    
+    # Решаем дифференциальное уравнение
+    P0_vec = P0.flatten()
+    sol = solve_ivp(dPdt, t_span, P0_vec, max_step=0.01, rtol=1e-8, atol=1e-10)
+    
+    # Вычисляем trace(P(t)) = E{||e_h(t)||²}
+    trace_P_t = np.array([np.trace(P.reshape(2, 2)) for P in sol.y.T])
+    
+    return sol.t, trace_P_t
+
+
+def plot_instant_criterion(
+    res: Dict[str, np.ndarray], 
+    fname: str, 
+    title: str,
+    W_noise: np.ndarray | None = None,
+    V_noise: float | None = None,
+):
+    """График нормированного математического ожидания критерия качества E{||e_h(t)||²}"""
+    L_gain = res["L"]
+    
+    # Используем переданные W и V или номинальные по умолчанию
+    W_used = W_noise if W_noise is not None else W_nom
+    V_used = V_noise if V_noise is not None else V_nom
+    
+    # Вычисляем математическое ожидание через ковариационную матрицу
+    t_P, trace_P_t = compute_error_covariance_trajectory(
+        L_gain, W_used, V_used, T_span
+    )
+    
+    # Нормируем на начальное значение (trace(P(0)) = 1)
+    J_norm = trace_P_t / trace_P_t[0] if trace_P_t[0] > 0 else trace_P_t
+    
+    plt.figure(figsize=(6, 4))
+    plt.plot(t_P, J_norm, linewidth=2)
+    plt.xlabel("t")
+    plt.ylabel("$E\\{\\|e_h(t)\\|^2\\} / E\\{\\|e_h(0)\\|^2\\}$")
+    plt.grid(True, alpha=0.3)
+    plt.tight_layout()
+    plt.title(title)
+    plt.savefig(os.path.join(output_dir, fname), dpi=200)
+
+
 results = {}
 
 # 1. Номинальный наблюдатель
 L_nom = observer_gain(W_nom, V_nom)
 results["nominal"] = simulate_observer(L_nom, "L_nom", lambda t: np.sin(t), W_noise=W_nom, V_noise=V_nom, seed=42)
 plot_errors(results["nominal"], "error_nominal.png", "Ошибки наблюдателя (номинальные W,V)")
-plot_integral(results["nominal"], "J_nominal.png", "Интеграл ошибки (номинал)")
+plot_instant_criterion(results["nominal"], "J_nominal.png", "Критерий качества $\\|e_h(t)\\|^2$ (номинал)", W_nom, V_nom)
 plt.figure(figsize=(6, 4))
 plt.plot(results["nominal"]["t"], results["nominal"]["u"])
 plt.xlabel("t")
@@ -192,13 +261,15 @@ plt.legend()
 plt.tight_layout()
 plt.title("Интеграл ошибки: отклонение L")
 plt.savefig(os.path.join(output_dir, "J_compare_L.png"), dpi=200)
+# Отдельный график критерия для случая с отклонённым L
+plot_instant_criterion(results["L_pert"], "J_L.png", "Критерий качества $\\|e_h(t)\\|^2$ при отклонении L", W_nom, V_nom)
 
 # 4. Изменение W (симметричная матрица >0)
 W_mod = np.array([[8.5, 3.8], [3.8, 5.5]])
 L_W = observer_gain(W_mod, V_nom)
 results["W_mod"] = simulate_observer(L_W, "W_mod", lambda t: np.sin(t), W_noise=W_mod, V_noise=V_nom, seed=42)
 plot_errors(results["W_mod"], "error_W.png", "Ошибки при усиленном шуме процесса W")
-plot_integral(results["W_mod"], "J_W.png", "J(0,t) при изменённых W")
+plot_instant_criterion(results["W_mod"], "J_W.png", "Критерий качества $\\|e_h(t)\\|^2$ при изменённых W", W_mod, V_nom)
 # График сравнения для W
 plt.figure(figsize=(6, 4))
 for key, label in [("nominal", "номинал"), ("W_mod", "W изменён")]:
@@ -228,7 +299,7 @@ V_mod = 3.0
 L_V = observer_gain(W_nom, V_mod)
 results["V_mod"] = simulate_observer(L_V, "V_mod", lambda t: np.sin(t), W_noise=W_nom, V_noise=V_mod, seed=42)
 plot_errors(results["V_mod"], "error_V.png", "Ошибки при увеличенном шуме измерений V")
-plot_integral(results["V_mod"], "J_V.png", "J(0,t) при изменённом V")
+plot_instant_criterion(results["V_mod"], "J_V.png", "Критерий качества $\\|e_h(t)\\|^2$ при изменённом V", W_nom, V_mod)
 # График сравнения для V
 plt.figure(figsize=(6, 4))
 for key, label in [("nominal", "номинал"), ("V_mod", "V изменён")]:
@@ -298,6 +369,8 @@ plt.grid(True, alpha=0.3)
 plt.tight_layout()
 plt.title("Ошибка наблюдателя в ЛКГ-замыкании")
 plt.savefig(os.path.join(output_dir, "error_LQG.png"), dpi=200)
+# График критерия качества для ЛКГ
+plot_instant_criterion(results["lqg"], "J_LQG.png", "Критерий качества $\\|e_h(t)\\|^2$ в ЛКГ-системе", W_nom, V_nom)
 
 
 def summarize(res_dict: Dict[str, Dict[str, np.ndarray]]):
